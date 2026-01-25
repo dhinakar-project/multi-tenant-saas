@@ -26,10 +26,10 @@ function Layout({ children }) {
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center space-x-8">
                             <div className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
                                     <span className="text-white font-bold text-sm">ST</span>
                                 </div>
-                                <span className="font-bold text-white text-lg">SaaS Tickets</span>
+                                <span className="font-bold text-white text-lg drop-shadow-lg">SaaS Tickets</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 {isSignedIn && (
@@ -37,8 +37,8 @@ function Layout({ children }) {
                                         <Link
                                             to="/dashboard"
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive('/dashboard')
-                                                    ? 'bg-white/20 text-white'
-                                                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                                                ? 'bg-white/20 text-white'
+                                                : 'text-gray-300 hover:text-white hover:bg-white/10'
                                                 }`}
                                         >
                                             Dashboard
@@ -46,8 +46,8 @@ function Layout({ children }) {
                                         <Link
                                             to="/admin"
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive('/admin')
-                                                    ? 'bg-white/20 text-white'
-                                                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                                                ? 'bg-white/20 text-white'
+                                                : 'text-gray-300 hover:text-white hover:bg-white/10'
                                                 }`}
                                         >
                                             Admin

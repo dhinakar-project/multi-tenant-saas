@@ -70,34 +70,37 @@ function Dashboard() {
     return (
         <div className="space-y-12">
             {/* Hero Section */}
-            <section className="relative py-16">
-                <div className="grid md:grid-cols-2 gap-8 items-center">
+            <section className="relative py-20">
+                <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div>
-                        <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
+                        <h1 className="text-6xl font-bold text-white mb-6 leading-tight tracking-tight">
                             Multi-Tenant Issue & Ticket Management
                         </h1>
-                        <p className="text-xl text-gray-300 mb-6">
+                        <p className="text-xl text-gray-300/90 mb-6 leading-relaxed">
                             Powerful, secure, and scalable ticket management for modern teams.
                             Complete tenant isolation with enterprise-grade security.
                         </p>
                     </div>
 
-                    <div className="glass-card p-6">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-semibold text-gray-300 mb-2">Current Tenant</h3>
-                            <div className="flex items-center space-x-2">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold">{tenantSlug.charAt(0).toUpperCase()}</span>
+                    <div className="glass-card p-8 border-2">
+                        <div className="mb-8">
+                            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Current Tenant</h3>
+                            <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                    <span className="text-white font-bold text-lg">{tenantSlug.charAt(0).toUpperCase()}</span>
                                 </div>
                                 <div>
-                                    <p className="text-white font-bold">{tenantSlug}</p>
-                                    <p className="text-xs text-green-400">● Signed In</p>
+                                    <p className="text-white font-bold text-lg">{tenantSlug}</p>
+                                    <div className="flex items-center space-x-1.5 mt-1">
+                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                        <span className="text-xs text-green-400 font-medium">Signed In</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-sm font-semibold text-gray-300 mb-3">Quick Actions</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Quick Actions</h3>
                             <button
                                 onClick={() => navigate('/tickets/new')}
                                 className="btn-primary w-full"
@@ -288,9 +291,9 @@ function Dashboard() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ticket.priority === 'Urgent' ? 'bg-red-100 text-red-800' :
-                                                        ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
-                                                            ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                                'bg-blue-100 text-blue-800'
+                                                    ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                                                        ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-blue-100 text-blue-800'
                                                     }`}>
                                                     {ticket.priority}
                                                 </span>

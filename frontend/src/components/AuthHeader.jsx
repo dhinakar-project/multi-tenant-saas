@@ -11,7 +11,7 @@ const AuthHeader = () => {
     return (
         <header style={{ padding: "1rem", borderBottom: "1px solid #e5e7eb" }}>
             <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>Multi-Tenant SaaS</h1>
+                <h1 style={{ fontSize: "2rem", fontWeight: "bold", color: "white", textShadow: "0 4px 6px rgba(0,0,0,0.3)" }}>Multi-Tenant SaaS</h1>
                 <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
                     <SignedOut>
                         <SignInButton mode="redirect" forceRedirectUrl="/dashboard">
