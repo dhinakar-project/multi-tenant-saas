@@ -1,0 +1,153 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
+import api, { setClerkTokenGetter } from '../api/api';
+
+function TicketDetail() {
+    const { id } = useParams();
+    const { getToken } = useAuth();
+    const navigate = useNavigate();
+    const [ticket, setTicket] = useState(null);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+
+    useEffect(() => {
+        setClerkTokenGetter(getToken);
+    }, [getToken]);
+
+    useEffect(() => {
+        fetchData();
+    }, [id]);
+
+    const fetchData = async () => {
+        const [ticketRes, commentsRes] = await Promise.all([
+            api.get(`/tickets/${id}`),
+            api.get(`/tickets/${id}/comments`)
+        ]);
+        setTicket(ticketRes.data);
+        setComments(commentsRes.data);
+    };
+
+    const handleStatusChange = async (newStatus) => {
+        await api.patch(`/tickets/${id}/status`, { status: newStatus });
+        fetchData();
+    };
+
+    const handleAddComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+        await api.post(`/tickets/${id}/comments`, { message: newComment });
+        setNewComment('');
+        fetchData();
+    };
+
+    if (!ticket) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+            {/* Back Button */}
+            <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Dashboard</span>
+            </button>
+
+            {/* Ticket Details Card */}
+            <div className="glass-card-light p-8">
+                <div className="flex items-start justify-between mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900">{ticket.title}</h1>
+                    <span className={`px-4 py-2 text-sm font-bold rounded-lg ${ticket.priority === 'Urgent' ? 'bg-red-100 text-red-800' :
+                            ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                                ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-blue-100 text-blue-800'
+                        }`}>
+                        {ticket.priority}
+                    </span>
+                </div>
+
+                <p className="text-gray-700 whitespace-pre-wrap mb-6 leading-relaxed">{ticket.description}</p>
+
+                <div className="flex items-center space-x-6 text-sm text-gray-600 border-t border-gray-200 pt-6 mb-6">
+                    <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-900">Status:</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${ticket.status === 'Open' ? 'bg-green-100 text-green-800' :
+                                ticket.status === 'InProgress' ? 'bg-blue-100 text-blue-800' :
+                                    ticket.status === 'Resolved' ? 'bg-purple-100 text-purple-800' :
+                                        'bg-gray-100 text-gray-800'
+                            }`}>
+                            {ticket.status}
+                        </span>
+                    </div>
+                    <div>
+                        <span className="font-medium text-gray-900">Created:</span> {new Date(ticket.createdAt).toLocaleDateString()}
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                    <label className="text-sm font-semibold text-gray-700">Change Status:</label>
+                    <select
+                        value={ticket.status}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    >
+                        <option>Open</option>
+                        <option>InProgress</option>
+                        <option>Resolved</option>
+                        <option>Closed</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Comments Card */}
+            <div className="glass-card-light p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
+
+                <div className="space-y-4 mb-8">
+                    {comments.map((c) => (
+                        <div key={c.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-semibold text-gray-900">
+                                    {c.author ? c.author.fullName : 'Unknown'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    {new Date(c.createdAt).toLocaleString()}
+                                </span>
+                            </div>
+                            <p className="text-gray-700">{c.message}</p>
+                        </div>
+                    ))}
+                    {comments.length === 0 && (
+                        <p className="text-gray-500 italic text-center py-8">
+                            No comments yet. Be the first to comment!
+                        </p>
+                    )}
+                </div>
+
+                <form onSubmit={handleAddComment} className="space-y-4">
+                    <textarea
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                        rows="4"
+                        placeholder="Add a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                    />
+                    <button type="submit" className="btn-primary">
+                        Post Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default TicketDetail;

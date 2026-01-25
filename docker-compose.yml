@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mt_postgres
+    environment:
+      POSTGRES_USER: saas_user
+      POSTGRES_PASSWORD: Saas@123
+      POSTGRES_DB: multitenant_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saas_user -d multitenant_saas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    container_name: mt_backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/multitenant_saas
+      SPRING_DATASOURCE_USERNAME: saas_user
+      SPRING_DATASOURCE_PASSWORD: Saas@123
+      APPLICATION_SECURITY_JWT_SECRET-KEY: ${JWT_SECRET:-dev-CHANGE-ME-TO-A-LONG-RANDOM-SECRET-64-CHARS-MIN-please}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8080/api
+    container_name: mt_frontend
+    ports:
+      - "${FRONTEND_PORT:-3001}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
