@@ -36,9 +36,17 @@ public class TenantInterceptor implements HandlerInterceptor {
         String tenantSlug = TenantHeaderUtil.resolveTenantSlug(request);
 
         if (tenantSlug != null) {
+            System.out.println("DEBUG_INTERCEPTOR: Resolving slug: [" + tenantSlug + "]");
+            System.out.println("DEBUG_INTERCEPTOR: Slug length: " + tenantSlug.length());
+            System.out.println("DEBUG_INTERCEPTOR: Exists in DB? " + tenantRepository.existsBySlug(tenantSlug));
+
             Tenant tenant = tenantRepository.findBySlug(tenantSlug)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Tenant '" + tenantSlug + "' not found"));
+                    .orElseThrow(() -> {
+                        System.out.println("DEBUG_INTERCEPTOR: NOT FOUND but Exists? "
+                                + tenantRepository.existsBySlug(tenantSlug));
+                        return new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Tenant '" + tenantSlug + "' not found");
+                    });
             TenantContext.setTenantId(tenant.getId());
         }
 

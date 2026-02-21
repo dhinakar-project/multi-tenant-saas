@@ -6,29 +6,27 @@ spring:
   application:
      name: saas-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/multitenant_saas
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/multitenant_saas?allowPublicKeyRetrieval=true&useSSL=false
     username: saas_user
     password: Saas@123
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
   flyway:
     enabled: true
     locations: classpath:db/migration
 
-application:
-  security:
-    jwt:
-      # generate your own long random string (64+ chars). Don't keep "dev" in prod.
-      secret-key: "dev-CHANGE-ME-TO-A-LONG-RANDOM-SECRET-64-CHARS-MIN-please"
-      expiration: 86400000   # 1 day (ms)
-      refresh-token:
-        expiration: 604800000 # 7 days (ms)
+# Clerk Authentication Configuration
+clerk:
+  jwks-url: ${CLERK_JWKS_URL:https://leading-mackerel-20.clerk.accounts.dev/.well-known/jwks.json}
+  issuer: ${CLERK_ISSUER:https://leading-mackerel-20.clerk.accounts.dev}
+  # Optional: Add authorized party (azp) validation if needed
+  # authorized-party: your-clerk-frontend-api
 
 management:
   endpoints:

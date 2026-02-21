@@ -3,6 +3,9 @@ package com.example.saas.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.util.UUID;
 
 @Getter
@@ -16,6 +19,7 @@ public class Ticket extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(nullable = false)
@@ -25,9 +29,11 @@ public class Ticket extends BaseEntity {
     private String priority;
 
     @Column(name = "assignee_id")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID assigneeId;
 
     @Column(name = "created_by")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useTenant } from '../context/TenantContext';
 import api, { setClerkTokenGetter } from '../api/api';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ErrorCard from '../components/ErrorCard';
@@ -8,6 +9,7 @@ import FAQAccordion from '../components/FAQAccordion';
 
 function Dashboard() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
+    const { tenantSlug, tenantName, isBootstrapping, bootstrapError } = useTenant();
     const location = useLocation();
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
@@ -65,7 +67,42 @@ function Dashboard() {
         );
     }
 
-    const tenantSlug = localStorage.getItem('tenantSlug') || 'demo';
+    // Tenant bootstrapping in progress
+    if (isBootstrapping) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-white">Setting up your workspace...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Bootstrap error
+    if (bootstrapError) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="glass-card-light p-8 text-center max-w-md">
+                    <h2 className="text-xl font-bold text-red-800 mb-4">Setup Error</h2>
+                    <p className="text-gray-600 mb-6">{bootstrapError}</p>
+                    <button onClick={() => window.location.reload()} className="btn-primary w-full">Retry</button>
+                </div>
+            </div>
+        );
+    }
+
+    // No tenant (shouldn't happen with auto-bootstrap, but safety check)
+    if (!tenantSlug) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-white">Initializing...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-12">

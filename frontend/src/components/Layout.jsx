@@ -15,7 +15,8 @@ function Layout({ children }) {
     };
 
     // Get tenant slug from localStorage (temporary until Clerk orgs integration)
-    const tenantSlug = localStorage.getItem('tenantSlug') || 'demo';
+    const rawTenantSlug = localStorage.getItem('tenantSlug') || 'demo';
+    const tenantSlug = rawTenantSlug.trim().toLowerCase().replace(/_/g, '-');
 
     const isActive = (path) => location.pathname === path;
 

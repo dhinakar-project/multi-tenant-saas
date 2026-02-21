@@ -1,53 +1,43 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: mt_postgres
+  mysql:
+    image: mysql:8.0
+    container_name: mt_mysql
     environment:
-      POSTGRES_USER: saas_user
-      POSTGRES_PASSWORD: Saas@123
-      POSTGRES_DB: multitenant_saas
-    ports:
-      - "5432:5432"
+      MYSQL_DATABASE: multitenant_saas
+      MYSQL_USER: saas_user
+      MYSQL_PASSWORD: Saas@123
+      MYSQL_ROOT_PASSWORD: root_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U saas_user -d multitenant_saas"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
 
   backend:
     build: ./backend
     container_name: mt_backend
+    restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/multitenant_saas
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/multitenant_saas?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: saas_user
       SPRING_DATASOURCE_PASSWORD: Saas@123
-      APPLICATION_SECURITY_JWT_SECRET-KEY: ${JWT_SECRET:-dev-CHANGE-ME-TO-A-LONG-RANDOM-SECRET-64-CHARS-MIN-please}
+      APPLICATION_SECURITY_JWT_SECRET_KEY: dev-secret
     ports:
-      - "8080:8080"
+      - "8081:8080"
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   frontend:
-    build: 
-      context: ./frontend
-      args:
-        - VITE_API_URL=http://localhost:8080/api
+    build: ./frontend
     container_name: mt_frontend
     ports:
-      - "${FRONTEND_PORT:-3001}:80"
+      - "3001:80"
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
 
 volumes:
-  postgres_data:
+  mysql_data:

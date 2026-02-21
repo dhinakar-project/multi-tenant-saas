@@ -20,9 +20,11 @@ function Signup() {
         setLoading(true);
 
         try {
-            await api.post('/tenants', formData);
-            const slug = formData.tenantSlug;
-            navigate('/login', { state: { slug } });
+            const sanitizedSlug = formData.tenantSlug.trim().toLowerCase().replace(/_/g, '-');
+            const payload = { ...formData, tenantSlug: sanitizedSlug };
+
+            await api.post('/tenants', payload);
+            navigate('/login', { state: { slug: sanitizedSlug } });
         } catch (err) {
             console.error(err);
             // Display the actual backend error message

@@ -1,6 +1,7 @@
 package com.example.saas.service;
 
 import com.example.saas.core.TenantContext;
+import com.example.saas.dto.TenantBootstrapResponse;
 import com.example.saas.dto.TenantRegisterRequest;
 import com.example.saas.dto.TenantResponse;
 import com.example.saas.model.Tenant;
@@ -15,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +62,104 @@ public class TenantService {
         }
 
         return new TenantResponse(tenant.getId().toString(), tenant.getSlug(), tenant.getName());
+    }
+
+    /**
+     * Bootstrap tenant for authenticated Clerk user.
+     * Creates tenant if user has none, or returns existing tenant.
+     * Idempotent - safe to call multiple times.
+     */
+    @Transactional
+    public TenantBootstrapResponse bootstrapTenant(User user) {
+        // First, ensure user exists in database
+        // (user might be transient from ClerkAuthenticationFilter during bootstrap)
+        User dbUser = userRepository.findByClerkUserId(user.getClerkUserId())
+                .orElse(null);
+
+        if (dbUser != null) {
+            // User exists - check if they already have a tenant
+            Tenant existingTenant = tenantRepository.findFirstTenantByUserId(dbUser.getId())
+                    .orElse(null);
+
+            if (existingTenant != null) {
+                // User already has a tenant - return it
+                String role = getTenantRoleForUser(dbUser.getId(), existingTenant.getId());
+                return new TenantBootstrapResponse(
+                        existingTenant.getSlug(),
+                        existingTenant.getName(),
+                        role,
+                        false);
+            }
+        }
+
+        // Create new tenant for user
+        String tenantSlug = generateTenantSlug(user.getEmail());
+        String tenantName = user.getFullName() != null ? user.getFullName() + "'s Organization" : "My Organization";
+
+        Tenant newTenant = new Tenant();
+        newTenant.setSlug(tenantSlug);
+        newTenant.setName(tenantName);
+        newTenant = tenantRepository.save(newTenant);
+
+        // Create or update user with tenant_id
+        if (dbUser == null) {
+            // User doesn't exist - create them
+            dbUser = new User();
+            dbUser.setId(UUID.randomUUID());
+            dbUser.setClerkUserId(user.getClerkUserId());
+            dbUser.setEmail(user.getEmail());
+            dbUser.setFullName(user.getFullName());
+            dbUser.setPassword(""); // Clerk handles auth
+            dbUser.setActive(true);
+            dbUser.setTenantId(newTenant.getId()); // Set tenant_id to satisfy NOT NULL constraint
+
+            Set<String> roles = new LinkedHashSet<>();
+            roles.add("USER_READ");
+            roles.add("TICKET_READ");
+            roles.add("TICKET_WRITE");
+            roles.add("TENANT_ADMIN");
+            dbUser.setRoles(roles);
+
+            dbUser = userRepository.save(dbUser);
+        } else {
+            // User exists but has no tenant - update tenant_id
+            dbUser.setTenantId(newTenant.getId());
+            if (!dbUser.getRoles().contains("TENANT_ADMIN")) {
+                dbUser.getRoles().add("TENANT_ADMIN");
+            }
+            dbUser = userRepository.save(dbUser);
+        }
+
+        // Assign user to tenant in user_tenants table
+        assignUserToTenant(dbUser.getId(), newTenant.getId(), "TENANT_ADMIN");
+
+        return new TenantBootstrapResponse(
+                newTenant.getSlug(),
+                newTenant.getName(),
+                "TENANT_ADMIN",
+                true);
+    }
+
+    private String generateTenantSlug(String email) {
+        // Generate slug from email: user@example.com -> user-org
+        String baseSlug = email.split("@")[0].toLowerCase().replaceAll("[^a-z0-9]", "-");
+        String slug = baseSlug + "-org";
+
+        // Ensure uniqueness
+        int counter = 1;
+        while (tenantRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-org-" + counter++;
+        }
+
+        return slug;
+    }
+
+    private void assignUserToTenant(UUID userId, UUID tenantId, String role) {
+        userRepository.assignUserToTenant(userId.toString(), tenantId.toString(), role);
+    }
+
+    private String getTenantRoleForUser(UUID userId, UUID tenantId) {
+        return userRepository.findTenantRoleForUser(userId.toString(), tenantId.toString())
+                .orElse("MEMBER");
     }
 }

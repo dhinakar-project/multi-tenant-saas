@@ -1,31 +1,38 @@
 package com.example.saas.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User extends BaseEntity implements UserDetails {
+@Data
+public class User implements UserDetails {
+
+    @Id
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "id", columnDefinition = "CHAR(36)")
+    private UUID id;
+
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "tenant_id", columnDefinition = "CHAR(36)")
+    private UUID tenantId;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "clerk_user_id", unique = true)
+    private String clerkUserId;
+
+    @Column(name = "password_hash")
     private String password;
 
     @Column(name = "full_name")
@@ -34,10 +41,10 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "is_active")
     private boolean isActive = true;
 
-    // Fixed: Map to PostgreSQL TEXT[] array instead of a separate table
-    // @ElementCollection
-    @Column(name = "roles", columnDefinition = "text[]")
-    @JdbcTypeCode(SqlTypes.ARRAY)
+    // Fixed: Custom table for roles to support MySQL
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role")
     private Set<String> roles = new LinkedHashSet<>();
 
     @Override

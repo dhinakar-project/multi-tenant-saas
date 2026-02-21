@@ -1,6 +1,6 @@
 package com.example.saas.config;
 
-import com.example.saas.security.JwtAuthenticationFilter;
+import com.example.saas.security.ClerkAuthenticationFilter;
 import com.example.saas.security.TenantFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,22 +31,22 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final ClerkAuthenticationFilter clerkAuthFilter;
     private final TenantFilter tenantFilter;
     private final UserDetailsService userDetailsService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
-                        .accessDeniedHandler((request, response, accessDeniedException) ->
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
-                )
+                        .authenticationEntryPoint((request, response, authException) -> response
+                                .sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> response
+                                .sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")))
                 .authorizeHttpRequests(auth -> auth
                         // ✅ allow CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -57,18 +57,19 @@ public class SecurityConfig {
 
                         // ✅ dev tools
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/actuator/**", "/api/actuator/**").permitAll() // Both paths
                         .requestMatchers("/error").permitAll()
 
                         // ✅ protected endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
 
-                // NOTE: order matters. Tenant filter should run early but MUST skip /api/tenants + /api/auth/**
+                // Filter order: TenantFilter → ClerkAuthenticationFilter
+                // TenantFilter sets tenant context, ClerkAuthFilter validates JWT and
+                // provisions user
                 .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(clerkAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // optional (safe): default headers
                 .httpBasic(Customizer.withDefaults());
@@ -96,7 +97,8 @@ public class SecurityConfig {
 
     /**
      * CORS configuration supporting both localhost and LAN access.
-     * Uses allowedOriginPatterns for wildcard support (recommended when using credentials).
+     * Uses allowedOriginPatterns for wildcard support (recommended when using
+     * credentials).
      */
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
@@ -105,8 +107,10 @@ public class SecurityConfig {
         // Allow specific localhost origins and LAN IP ranges
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
+                "http://localhost:3001", // Docker frontend
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
+                "http://127.0.0.1:3001", // Docker frontend
                 "http://127.0.0.1:5173",
                 "http://192.168.*.*:*",
                 "http://10.*.*.*:*",
@@ -125,8 +129,7 @@ public class SecurityConfig {
                 "http://172.28.*.*:*",
                 "http://172.29.*.*:*",
                 "http://172.30.*.*:*",
-                "http://172.31.*.*:*"
-        ));
+                "http://172.31.*.*:*"));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Slug"));

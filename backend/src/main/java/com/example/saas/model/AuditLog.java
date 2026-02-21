@@ -5,6 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.util.UUID;
 
 @Getter
@@ -16,6 +19,7 @@ import java.util.UUID;
 public class AuditLog extends BaseEntity {
 
     @Column(name = "actor_user_id")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID actorUserId;
 
     @Column(name = "actor_email")
@@ -28,6 +32,7 @@ public class AuditLog extends BaseEntity {
     private String entityType;
 
     @Column(name = "entity_id")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID entityId;
 
     private String summary;

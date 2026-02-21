@@ -12,6 +12,20 @@ function TicketCreate() {
         setClerkTokenGetter(getToken);
     }, [getToken]);
 
+    const tenantSlug = localStorage.getItem('tenantSlug');
+
+    if (!tenantSlug) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="glass-card-light p-8 text-center max-w-md">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">No Tenant Selected</h2>
+                    <p className="text-gray-600 mb-6">Please sign in to your organization to create a ticket.</p>
+                    <button onClick={() => navigate('/login')} className="btn-primary w-full">Go to Login</button>
+                </div>
+            </div>
+        );
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {

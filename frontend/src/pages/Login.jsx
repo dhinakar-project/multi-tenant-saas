@@ -11,8 +11,9 @@ function Login() {
 
     useEffect(() => {
         if (location.state?.slug) {
-            setFormData(prev => ({ ...prev, slug: location.state.slug }));
-            localStorage.setItem('tenantSlug', location.state.slug);
+            const sanitizedSlug = location.state.slug.trim().toLowerCase().replace(/_/g, '-');
+            setFormData(prev => ({ ...prev, slug: sanitizedSlug }));
+            localStorage.setItem('tenantSlug', sanitizedSlug);
         }
     }, [location.state]);
 
