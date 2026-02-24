@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
 
@@ -18,6 +18,7 @@ export const TenantProvider = ({ children }) => {
     const [tenantName, setTenantName] = useState(null);
     const [isBootstrapping, setIsBootstrapping] = useState(false);
     const [bootstrapError, setBootstrapError] = useState(null);
+    const bootstrapInitiatedRef = useRef(false);
 
     // Set Clerk token getter for API interceptor
     useEffect(() => {
@@ -29,11 +30,11 @@ export const TenantProvider = ({ children }) => {
     useEffect(() => {
         const bootstrapTenant = async () => {
             // Only bootstrap if user is signed in and we don't have a tenant yet
-            // Don't retry if there was an error (prevent infinite loop)
-            if (!isLoaded || !isSignedIn || tenantSlug || isBootstrapping || bootstrapError) {
+            if (!isLoaded || !isSignedIn || tenantSlug || bootstrapInitiatedRef.current) {
                 return;
             }
 
+            bootstrapInitiatedRef.current = true;
             setIsBootstrapping(true);
             setBootstrapError(null);
 
@@ -61,13 +62,14 @@ export const TenantProvider = ({ children }) => {
         };
 
         bootstrapTenant();
-    }, [isLoaded, isSignedIn, tenantSlug, isBootstrapping, bootstrapError]);
+    }, [isLoaded, isSignedIn, tenantSlug]);
 
     // Clear tenant on sign out
     useEffect(() => {
         if (isLoaded && !isSignedIn) {
             setTenantSlug(null);
             setTenantName(null);
+            bootstrapInitiatedRef.current = false;
             localStorage.removeItem('tenantSlug');
         }
     }, [isLoaded, isSignedIn]);

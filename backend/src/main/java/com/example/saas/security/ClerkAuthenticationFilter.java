@@ -62,8 +62,18 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
                 // Bootstrap endpoint doesn't require tenant context (user doesn't have one yet)
                 if (path.equals("/api/tenants/bootstrap")) {
                     // Find or provision user WITHOUT tenant context
-                    User user = userRepository.findByClerkUserId(clerkUserId)
-                            .orElseGet(() -> provisionBootstrapUser(jwt));
+                    User user = userRepository.findByClerkUserId(clerkUserId).orElse(null);
+
+                    if (user == null) {
+                        String email = clerkJwtValidator.extractEmail(jwt);
+                        if (email != null) {
+                            user = userRepository.findByEmail(email).orElse(null);
+                        }
+                    }
+
+                    if (user == null) {
+                        user = provisionBootstrapUser(jwt);
+                    }
 
                     // Populate Spring Security context
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user,
@@ -97,12 +107,36 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
                 TenantContext.setTenantId(tenant.getId());
 
                 // Find or provision user
-                User user = userRepository.findByClerkUserId(clerkUserId)
-                        .orElseGet(() -> provisionUser(jwt, tenant));
+                User user = userRepository.findByClerkUserId(clerkUserId).orElse(null);
+
+                if (user == null) {
+                    String email = clerkJwtValidator.extractEmail(jwt);
+                    if (email != null) {
+                        user = userRepository.findByEmail(email).orElse(null);
+                        if (user != null) {
+                            // Link existing user to Clerk ID
+                            user.setClerkUserId(clerkUserId);
+                            user = userRepository.save(user);
+                        }
+                    }
+                }
+
+                if (user == null) {
+                    user = provisionUser(jwt, tenant);
+                }
+
+                // Dynamically resolve the user's role for THIS specific tenant
+                String tenantRole = userRepository.findTenantRoleForUser(
+                        user.getId().toString(), tenant.getId().toString()).orElse("MEMBER");
+
+                java.util.List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>(
+                        user.getAuthorities());
+                authorities.add(
+                        new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + tenantRole));
 
                 // Populate Spring Security context
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
-                        user.getAuthorities());
+                        authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 

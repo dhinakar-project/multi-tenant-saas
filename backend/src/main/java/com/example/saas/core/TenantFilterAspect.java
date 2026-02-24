@@ -24,7 +24,7 @@ public class TenantFilterAspect {
         UUID tenantId = TenantContext.getTenantId();
         if (tenantId != null) {
             Session session = entityManager.unwrap(Session.class);
-            session.enableFilter("tenantFilter").setParameter("tenantId", tenantId);
+            session.enableFilter("tenantFilter").setParameter("tenantId", tenantId.toString());
         }
     }
 }

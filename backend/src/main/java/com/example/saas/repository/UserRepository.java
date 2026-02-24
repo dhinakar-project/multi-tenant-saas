@@ -16,10 +16,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByClerkUserId(String clerkUserId);
 
+    Optional<User> findByEmail(String email);
+
     boolean existsByEmailAndTenantId(String email, UUID tenantId);
 
     @Modifying
-    @Query(value = "INSERT INTO user_tenants (user_id, tenant_id, role) VALUES (:userId, :tenantId, :role)", nativeQuery = true)
+    @Query(value = "INSERT IGNORE INTO user_tenants (user_id, tenant_id, role) VALUES (:userId, :tenantId, :role)", nativeQuery = true)
     void assignUserToTenant(@Param("userId") String userId, @Param("tenantId") String tenantId,
             @Param("role") String role);
 

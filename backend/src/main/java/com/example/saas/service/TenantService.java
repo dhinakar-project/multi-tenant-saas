@@ -53,6 +53,9 @@ public class TenantService {
 
         try {
             userRepository.save(admin);
+            // Ensure the relation is created in user_tenants table immediately upon
+            // registration
+            assignUserToTenant(admin.getId(), tenant.getId(), "TENANT_ADMIN");
         } catch (DataIntegrityViolationException e) {
             // Email already exists for this tenant
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -76,10 +79,29 @@ public class TenantService {
         User dbUser = userRepository.findByClerkUserId(user.getClerkUserId())
                 .orElse(null);
 
+        // Fallback: If not found by Clerk ID, try by email.
+        // Handles case where user registers through custom UI (/api/tenants) without
+        // Clerk ID initially.
+        if (dbUser == null && user.getEmail() != null) {
+            dbUser = userRepository.findByEmail(user.getEmail()).orElse(null);
+            if (dbUser != null) {
+                dbUser.setClerkUserId(user.getClerkUserId());
+                dbUser = userRepository.save(dbUser);
+            }
+        }
+
         if (dbUser != null) {
             // User exists - check if they already have a tenant
             Tenant existingTenant = tenantRepository.findFirstTenantByUserId(dbUser.getId())
                     .orElse(null);
+
+            // Backward compatibility / safety net if user_tenants relationship was missed
+            if (existingTenant == null && dbUser.getTenantId() != null) {
+                existingTenant = tenantRepository.findById(dbUser.getTenantId()).orElse(null);
+                if (existingTenant != null) {
+                    assignUserToTenant(dbUser.getId(), existingTenant.getId(), "TENANT_ADMIN");
+                }
+            }
 
             if (existingTenant != null) {
                 // User already has a tenant - return it

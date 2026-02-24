@@ -21,7 +21,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
-@FilterDef(name = "tenantFilter", parameters = { @ParamDef(name = "tenantId", type = java.util.UUID.class) })
+@FilterDef(name = "tenantFilter", parameters = { @ParamDef(name = "tenantId", type = String.class) })
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 public abstract class BaseEntity {
 

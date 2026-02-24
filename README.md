@@ -4,7 +4,7 @@
 A production-ready prototype for a Secure Multi-Tenant Issue/Ticket Management SaaS.
 
 ## Tech Stack
--   **Backend**: Spring Boot 3, Java 17, PostgreSQL, Flyway, Spring Security
+-   **Backend**: Spring Boot 3, Java 17, MySQL, Flyway, Spring Security
 -   **Frontend**: React (Vite), TailwindCSS, Axios
 -   **Infrastructure**: Docker Compose
 
@@ -23,7 +23,7 @@ docker compose up --build
 cd backend
 mvn spring-boot:run
 ```
-(Ensure a PostgreSQL database is running on port 5432 with user/pass `postgres`/`postgres` and db `saas_db`).
+(Ensure a MySQL database is running on port 3306 with user/pass `saas_user`/`Saas@123` and db `multitenant_saas`).
 
 ### 2. Run the Frontend
 ```bash

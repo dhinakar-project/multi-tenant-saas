@@ -22,13 +22,13 @@ public class CommentController {
     private final AuditLogService auditLogService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('TICKET_READ')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER', 'ADMIN', 'USER')")
     public List<Comment> getComments(@PathVariable UUID ticketId) {
         return commentRepository.findAllByTicketIdOrderByCreatedAtAsc(ticketId);
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('TICKET_WRITE')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER', 'ADMIN', 'USER')")
     public Comment addComment(@PathVariable UUID ticketId, @RequestBody Map<String, String> body) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 

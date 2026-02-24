@@ -38,7 +38,7 @@
 
 **Improvements:**
 1. Removed obsolete `version: '3.8'` (not needed in Compose v2+)
-2. Added PostgreSQL healthcheck using `pg_isready`
+2. Added MySQL healthcheck using `mysqladmin ping`
 3. Added backend healthcheck using `/actuator/health` endpoint
 4. Changed `depends_on` to use `condition: service_healthy` instead of just container start
 5. Made frontend port configurable via `FRONTEND_PORT` env var (defaults to 3001)
@@ -55,7 +55,7 @@
 
 2. **docker-compose.yml**
    - Removed `version: '3.8'`
-   - Added PostgreSQL healthcheck
+   - Added MySQL healthcheck
    - Added backend healthcheck
    - Changed `depends_on` to use health conditions
    - Frontend port: `3001:80` (configurable)
@@ -90,7 +90,7 @@ docker ps
 CONTAINER ID   IMAGE                    STATUS          PORTS                    NAMES
 <id>           multi_tenant_saas...    Up X seconds    0.0.0.0:8080->8080/tcp   mt_backend
 <id>           multi_tenant_saas...    Up X seconds    0.0.0.0:3001->80/tcp     mt_frontend
-<id>           postgres:15-alpine       Up X seconds    0.0.0.0:5432->5432/tcp   mt_postgres
+<id>           mysql:8.0               Up X seconds    0.0.0.0:3306->3306/tcp   mt_mysql
 ```
 
 All three containers should show "Up" status.
@@ -159,11 +159,11 @@ Open browser: http://localhost:3001
 ### 7. Verify Database Schema
 
 ```bash
-# Connect to PostgreSQL
-docker exec -it mt_postgres psql -U saas_user -d multitenant_saas
+# Connect to MySQL
+docker exec -it mt_mysql mysql -u saas_user -pSaas@123 multitenant_saas
 
 # Check comments table structure
-\d comments
+DESCRIBE comments;
 ```
 
 **Expected Output:**
@@ -207,7 +207,7 @@ Flyway: Current version of schema "public": 4
 
 3. Manual migration (if needed):
    ```bash
-   docker exec -it mt_postgres psql -U saas_user -d multitenant_saas
+   docker exec -it mt_mysql mysql -u saas_user -pSaas@123 multitenant_saas
    # Then run the SQL from V4 migration manually
    ```
 

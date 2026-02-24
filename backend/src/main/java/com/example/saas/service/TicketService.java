@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketService {
@@ -23,12 +26,20 @@ public class TicketService {
 
     // PATCH 3: Pagination support
     public Page<Ticket> getAllTickets(int page, int size, String sort, String status) {
+        log.info("TicketService.getAllTickets called. Page: {}, Size: {}, Status: {}", page, size, status);
+        log.info("Current TenantContext ID before fetch: {}", com.example.saas.core.TenantContext.getTenantId());
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sort));
 
+        Page<Ticket> result;
         if (status != null && !status.isEmpty()) {
-            return ticketRepository.findAllByStatus(status, pageable);
+            result = ticketRepository.findAllByStatus(status, pageable);
+        } else {
+            result = ticketRepository.findAll(pageable);
         }
-        return ticketRepository.findAll(pageable);
+
+        log.info("Tickets retrieved: {}", result.getTotalElements());
+        return result;
     }
 
     public Ticket getTicket(UUID id) {
@@ -37,7 +48,12 @@ public class TicketService {
 
     @Transactional
     public Ticket createTicket(String title, String description, String priority) {
+        log.info("TicketService.createTicket called. Title: {}, Priority: {}", title, priority);
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Current user: {} (ID: {})", currentUser.getUsername(), currentUser.getId());
+
+        // Ensure tenantId exists
+        log.info("Current TenantContext ID: {}", com.example.saas.core.TenantContext.getTenantId());
 
         Ticket ticket = new Ticket();
         ticket.setTitle(title);
@@ -46,9 +62,16 @@ public class TicketService {
         ticket.setStatus("Open");
         ticket.setCreatedBy(currentUser.getId());
 
-        Ticket saved = ticketRepository.save(ticket);
-        auditLogService.log("TICKET_CREATED", "TICKET", saved.getId(), "Created ticket: " + title);
-        return saved;
+        log.info("Saving ticket to repository...");
+        try {
+            Ticket saved = ticketRepository.save(ticket);
+            log.info("Ticket saved successfully with ID: {}", saved.getId());
+            auditLogService.log("TICKET_CREATED", "TICKET", saved.getId(), "Created ticket: " + title);
+            return saved;
+        } catch (Exception e) {
+            log.error("Exception occurred while saving ticket!", e);
+            throw e;
+        }
     }
 
     @Transactional
