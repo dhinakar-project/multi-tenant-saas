@@ -49,7 +49,6 @@ public class TenantService {
         admin.setEmail(request.getAdminEmail());
         admin.setPassword(passwordEncoder.encode(request.getAdminPassword()));
         admin.setFullName(request.getAdminName());
-        admin.setRoles(Set.of("ADMIN"));
 
         try {
             userRepository.save(admin);
@@ -135,20 +134,10 @@ public class TenantService {
             dbUser.setActive(true);
             dbUser.setTenantId(newTenant.getId()); // Set tenant_id to satisfy NOT NULL constraint
 
-            Set<String> roles = new LinkedHashSet<>();
-            roles.add("USER_READ");
-            roles.add("TICKET_READ");
-            roles.add("TICKET_WRITE");
-            roles.add("TENANT_ADMIN");
-            dbUser.setRoles(roles);
-
             dbUser = userRepository.save(dbUser);
         } else {
             // User exists but has no tenant - update tenant_id
             dbUser.setTenantId(newTenant.getId());
-            if (!dbUser.getRoles().contains("TENANT_ADMIN")) {
-                dbUser.getRoles().add("TENANT_ADMIN");
-            }
             dbUser = userRepository.save(dbUser);
         }
 

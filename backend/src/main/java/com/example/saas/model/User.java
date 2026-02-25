@@ -41,20 +41,9 @@ public class User implements UserDetails {
     @Column(name = "is_active")
     private boolean isActive = true;
 
-    // Fixed: Custom table for roles to support MySQL
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
-    private Set<String> roles = new LinkedHashSet<>();
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (roles == null)
-            return Collections.emptyList();
-        return roles.stream()
-                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        return Collections.emptyList();
     }
 
     // ✅ MUST be explicitly present, Maven/Lombok + UserDetails compilation can be

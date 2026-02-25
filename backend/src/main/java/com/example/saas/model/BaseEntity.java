@@ -48,5 +48,13 @@ public abstract class BaseEntity {
         if (tenantId == null) {
             this.tenantId = TenantContext.getTenantId();
         }
+        // Defensive fallback: ensure timestamps are never null
+        // @CreatedDate should handle this, but guard against edge cases
+        if (createdAt == null) {
+            this.createdAt = java.time.LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            this.updatedAt = java.time.LocalDateTime.now();
+        }
     }
 }

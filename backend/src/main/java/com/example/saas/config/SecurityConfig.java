@@ -60,8 +60,11 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**", "/api/actuator/**").permitAll() // Both paths
                         .requestMatchers("/error").permitAll()
 
-                        // ✅ protected endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ✅ protected endpoints — TENANT_ADMIN only
+                        .requestMatchers("/api/admin/**").hasRole("TENANT_ADMIN")
+                        .requestMatchers("/api/invites").hasRole("TENANT_ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("TENANT_ADMIN")
+                        .requestMatchers("/api/audit-logs/**").hasRole("TENANT_ADMIN")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
 

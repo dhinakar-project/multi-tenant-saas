@@ -175,13 +175,6 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
         user.setPassword(""); // No password - Clerk handles auth
         user.setActive(true);
 
-        // Assign default role
-        Set<String> roles = new LinkedHashSet<>();
-        roles.add("USER_READ");
-        roles.add("TICKET_READ");
-        roles.add("TICKET_WRITE");
-        user.setRoles(roles);
-
         return userRepository.save(user);
     }
 
@@ -205,11 +198,6 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
         user.setFullName(fullName != null ? fullName : "Clerk User");
         user.setPassword(""); // No password - Clerk handles auth
         user.setActive(true);
-
-        // Assign minimal role for bootstrap
-        Set<String> roles = new LinkedHashSet<>();
-        roles.add("USER_READ");
-        user.setRoles(roles);
 
         // DO NOT SAVE - tenant_id is null and violates NOT NULL constraint
         // TenantBootstrapController will handle user persistence

@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 import AuthHeader from './components/AuthHeader';
 import SignInPage from './pages/auth/SignInPage';
 import SignUpPage from './pages/auth/SignUpPage';
+import Join from './pages/Join';
 
 function App() {
     return (
@@ -19,6 +20,9 @@ function App() {
                     {/* Auth Routes */}
                     <Route path="/sign-in/*" element={<SignInPage />} />
                     <Route path="/sign-up/*" element={<SignUpPage />} />
+
+                    {/* Invite Processing */}
+                    <Route path="/join" element={<Join />} />
 
                     {/* Public route */}
                     <Route path="/" element={

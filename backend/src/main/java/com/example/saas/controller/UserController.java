@@ -1,19 +1,18 @@
 package com.example.saas.controller;
 
 import com.example.saas.core.TenantContext;
+import com.example.saas.dto.UserDTO;
 import com.example.saas.model.User;
 import com.example.saas.repository.UserRepository;
 import com.example.saas.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -21,32 +20,28 @@ import java.util.UUID;
 public class UserController {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('USER_READ')")
-    public List<User> getUsers() {
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public List<UserDTO> getUsers() {
         // JPA Filter automatically filters by tenant
-        return userRepository.findAll();
-    }
-
-    @PostMapping
-    @PreAuthorize("hasAuthority('USER_WRITE')")
-    public User createUser(@RequestBody Map<String, Object> body) {
-        User user = new User();
-        user.setEmail((String) body.get("email"));
-        user.setPassword(passwordEncoder.encode((String) body.get("password")));
-        user.setFullName((String) body.get("fullName"));
-        user.setRoles(Set.of(((String) body.get("role")).split(","))); // Simple role parsing
-
-        User saved = userRepository.save(user);
-        auditLogService.log("USER_CREATED", "USER", saved.getId(), "Created user: " + saved.getEmail());
-        return saved;
+        return userRepository.findAll().stream().map(user -> {
+            UserDTO dto = new UserDTO();
+            dto.setId(user.getId());
+            dto.setEmail(user.getEmail());
+            dto.setFullName(user.getFullName());
+            dto.setActive(user.isActive());
+            String role = userRepository
+                    .findTenantRoleForUser(user.getId().toString(), TenantContext.getTenantId().toString())
+                    .orElse("MEMBER");
+            dto.setRole(role);
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('USER_WRITE')")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<Void> disableUser(@PathVariable UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
         user.setActive(false);

@@ -20,8 +20,14 @@ public class AuditLogService {
 
     @Transactional
     public void log(String action, String entityType, UUID entityId, String summary) {
-        if (TenantContext.getTenantId() == null)
-            return; // Cannot log if no tenant context
+        if (TenantContext.getTenantId() == null) {
+            // Warn instead of silently dropping — makes audit gaps visible in production
+            // logs
+            org.slf4j.LoggerFactory.getLogger(AuditLogService.class)
+                    .warn("[AUDIT] Skipping log for action={} entityType={} — TenantContext is null", action,
+                            entityType);
+            return;
+        }
 
         User actor = null;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

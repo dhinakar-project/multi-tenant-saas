@@ -21,7 +21,7 @@ public class TicketController {
     private final TicketService ticketService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER')")
     public Page<Ticket> getAllTickets(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -32,13 +32,13 @@ public class TicketController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER')")
     public Ticket getTicket(@PathVariable UUID id) {
         return ticketService.getTicket(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER')")
     public Ticket createTicket(@RequestBody Map<String, String> body) {
         log.info("Received POST /api/tickets with body: {}", body);
         Ticket created = ticketService.createTicket(
@@ -50,13 +50,13 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'ADMIN', 'SUPPORT')")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
     public Ticket updateStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
         return ticketService.updateTicketStatus(id, body.get("status"));
     }
 
     @PatchMapping("/{id}/assign")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
     public Ticket assignTicket(@PathVariable UUID id, @RequestBody Map<String, String> body) {
         return ticketService.assignTicket(id, UUID.fromString(body.get("assigneeId")));
     }

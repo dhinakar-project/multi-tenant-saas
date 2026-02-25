@@ -16,6 +16,7 @@ export const TenantProvider = ({ children }) => {
     const { isSignedIn, isLoaded, getToken } = useAuth();
     const [tenantSlug, setTenantSlug] = useState(null);
     const [tenantName, setTenantName] = useState(null);
+    const [userRole, setUserRole] = useState(null); // RBAC: populated from bootstrap response
     const [isBootstrapping, setIsBootstrapping] = useState(false);
     const [bootstrapError, setBootstrapError] = useState(null);
     const bootstrapInitiatedRef = useRef(false);
@@ -40,13 +41,27 @@ export const TenantProvider = ({ children }) => {
 
             try {
                 console.log('[TenantContext] Bootstrapping tenant...');
-                const response = await api.post('/tenants/bootstrap');
-                const { tenantSlug: slug, tenantName: name, isNewTenant } = response.data;
 
-                console.log(`[TenantContext] Bootstrap complete: ${slug} (new: ${isNewTenant})`);
+                // Check if a pending invite token exists from Join.jsx workflow
+                const pendingToken = sessionStorage.getItem('pending_invite_token');
+
+                const response = await api.post('/tenants/bootstrap', null, {
+                    params: pendingToken ? { token: pendingToken } : {}
+                });
+
+                // Clear the token now that it has been safely consumed by the backend
+                if (pendingToken) {
+                    sessionStorage.removeItem('pending_invite_token');
+                    console.log('[TenantContext] Pending invite token consumed successfully.');
+                }
+
+                const { tenantSlug: slug, tenantName: name, isNewTenant, role } = response.data;
+
+                console.log(`[TenantContext] Bootstrap complete: ${slug} (new: ${isNewTenant}, role: ${role})`);
 
                 setTenantSlug(slug);
                 setTenantName(name);
+                setUserRole(role || null); // Store role for UI-level RBAC guards
 
                 // Store in localStorage for axios interceptor
                 localStorage.setItem('tenantSlug', slug);
@@ -69,6 +84,7 @@ export const TenantProvider = ({ children }) => {
         if (isLoaded && !isSignedIn) {
             setTenantSlug(null);
             setTenantName(null);
+            setUserRole(null);
             bootstrapInitiatedRef.current = false;
             localStorage.removeItem('tenantSlug');
         }
@@ -77,6 +93,8 @@ export const TenantProvider = ({ children }) => {
     const value = {
         tenantSlug,
         tenantName,
+        userRole,
+        isAdmin: userRole === 'TENANT_ADMIN', // Convenience flag for conditional rendering
         isBootstrapping,
         bootstrapError,
         isReady: isLoaded && (!isSignedIn || (isSignedIn && tenantSlug !== null))

@@ -10,4 +10,7 @@ import java.util.UUID;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     List<AuditLog> findAllByActorUserId(UUID actorUserId);
+
+    /** Tenant-scoped query — ensures cross-tenant isolation in audit log access */
+    List<AuditLog> findAllByTenantId(UUID tenantId);
 }

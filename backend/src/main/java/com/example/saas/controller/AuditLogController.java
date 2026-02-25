@@ -1,5 +1,6 @@
 package com.example.saas.controller;
 
+import com.example.saas.core.TenantContext;
 import com.example.saas.model.AuditLog;
 import com.example.saas.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,9 @@ public class AuditLogController {
     private final AuditLogRepository auditLogRepository;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('AUDIT_READ')")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
     public List<AuditLog> getAuditLogs() {
-        return auditLogRepository.findAll();
+        // Tenant-scoped: only returns logs for the current authenticated tenant
+        return auditLogRepository.findAllByTenantId(TenantContext.getTenantId());
     }
 }

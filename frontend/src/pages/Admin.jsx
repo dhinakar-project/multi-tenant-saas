@@ -8,8 +8,9 @@ function Admin() {
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
 
-    // User form state
-    const [newUser, setNewUser] = useState({ email: '', password: '', fullName: '', role: 'TICKET_READ' });
+    // Invite form state
+    const [inviteRequest, setInviteRequest] = useState({ email: '', role: 'MEMBER' });
+    const [generatedInviteLink, setGeneratedInviteLink] = useState(null);
 
     useEffect(() => {
         setClerkTokenGetter(getToken);
@@ -27,14 +28,19 @@ function Admin() {
         try { const res = await api.get('/audit-logs'); setLogs(res.data); } catch (e) { }
     };
 
-    const handleCreateUser = async (e) => {
+    const handleGenerateInvite = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/users', newUser);
-            setNewUser({ email: '', password: '', fullName: '', role: 'TICKET_READ' });
-            fetchUsers();
+            const res = await api.post('/invites', inviteRequest);
+
+            // Build absolute join URL for easy copying
+            const joinUrl = `${window.location.origin}/join?token=${res.data.token}`;
+            setGeneratedInviteLink(joinUrl);
+
+            setInviteRequest({ email: '', role: 'MEMBER' });
+            // Optionally, we could fetch invites here if we had a tab for them
         } catch (e) {
-            alert('Failed to create user');
+            alert('Failed to generate invite');
         }
     };
 
@@ -46,8 +52,8 @@ function Admin() {
             <div className="flex space-x-2 border-b border-white/20">
                 <button
                     className={`px-6 py-3 font-semibold transition-all ${activeTab === 'users'
-                            ? 'border-b-2 border-indigo-500 text-white'
-                            : 'text-gray-400 hover:text-white'
+                        ? 'border-b-2 border-indigo-500 text-white'
+                        : 'text-gray-400 hover:text-white'
                         }`}
                     onClick={() => setActiveTab('users')}
                 >
@@ -55,8 +61,8 @@ function Admin() {
                 </button>
                 <button
                     className={`px-6 py-3 font-semibold transition-all ${activeTab === 'audit'
-                            ? 'border-b-2 border-indigo-500 text-white'
-                            : 'text-gray-400 hover:text-white'
+                        ? 'border-b-2 border-indigo-500 text-white'
+                        : 'text-gray-400 hover:text-white'
                         }`}
                     onClick={() => setActiveTab('audit')}
                 >
@@ -66,54 +72,64 @@ function Admin() {
 
             {activeTab === 'users' && (
                 <div className="space-y-6">
-                    {/* Create User Form */}
+                    {/* Send Invite Form */}
                     <div className="glass-card-light p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Create New User</h3>
-                        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                        <div className="mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Invite User to Organization</h3>
+                            <p className="text-sm text-gray-500 mt-1">Users must sign up via Clerk to join your tenant.</p>
+                        </div>
+                        <form onSubmit={handleGenerateInvite} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="lg:col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
                                 <input
                                     type="email"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={newUser.email}
-                                    onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                    value={inviteRequest.email}
+                                    placeholder="colleague@company.com"
+                                    onChange={e => setInviteRequest({ ...inviteRequest, email: e.target.value })}
                                     required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                                <input
-                                    type="password"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={newUser.password}
-                                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={newUser.fullName}
-                                    onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
-                                <input
-                                    type="text"
+                                <select
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={newUser.role}
-                                    onChange={e => setNewUser({ ...newUser, role: e.target.value })}
-                                />
+                                    value={inviteRequest.role}
+                                    onChange={e => setInviteRequest({ ...inviteRequest, role: e.target.value })}
+                                >
+                                    <option value="MEMBER">MEMBER</option>
+                                    <option value="TENANT_ADMIN">TENANT_ADMIN</option>
+                                </select>
                             </div>
                             <div className="flex items-end">
                                 <button type="submit" className="btn-primary w-full">
-                                    Add User
+                                    Generate Invite
                                 </button>
                             </div>
                         </form>
+
+                        {/* Display generated invite link */}
+                        {generatedInviteLink && (
+                            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <p className="text-sm font-semibold text-green-800 mb-2">Invite Generated Successfully!</p>
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={generatedInviteLink}
+                                        className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:outline-none"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(generatedInviteLink);
+                                        }}
+                                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Users Table */}
@@ -123,7 +139,7 @@ function Admin() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
                                 </tr>
                             </thead>
@@ -132,8 +148,8 @@ function Admin() {
                                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 text-sm text-gray-900">{u.email}</td>
                                         <td className="px-6 py-4 text-sm text-gray-900">{u.fullName}</td>
-                                        <td className="px-6 py-4 text-xs text-gray-600">
-                                            {activeTab === 'users' && u.roles ? u.roles.join(', ') : ''}
+                                        <td className="px-6 py-4 text-xs font-medium text-gray-600">
+                                            {u.role || 'MEMBER'}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
