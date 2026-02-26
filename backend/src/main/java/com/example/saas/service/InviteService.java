@@ -59,8 +59,7 @@ public class InviteService {
         return saved;
     }
 
-    @Transactional
-    public void acceptInvite(String token, User user) {
+    public TenantInvite validateInvite(String token) {
         TenantInvite invite = tenantInviteRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid invite token"));
 
@@ -72,35 +71,24 @@ public class InviteService {
             throw new IllegalArgumentException("This invite has expired");
         }
 
-        // Check if user is already part of this tenant
-        boolean alreadyMember = userRepository
-                .findTenantRoleForUser(user.getId().toString(), invite.getTenantId().toString()).isPresent();
+        return invite;
+    }
 
-        if (alreadyMember) {
-            log.info("User {} is already a member of tenant {}", user.getEmail(), invite.getTenantId());
-            invite.setUsed(true); // Neutralize the invite anyway
-            tenantInviteRepository.save(invite);
-            return;
-        }
-
-        // Attach user to tenant via native query
-        userRepository.assignUserToTenant(user.getId().toString(), invite.getTenantId().toString(), invite.getRole());
-
+    @Transactional
+    public void consumeInvite(TenantInvite invite, User dbUser) {
         // Mark invite as used
         invite.setUsed(true);
         tenantInviteRepository.save(invite);
 
         // We run in a context where TenantContext might NOT be set if accepting before
         // switching.
-        // Or if it is set, we use it. But for Audit logging, we need to be careful if
-        // it expects tenant isolation.
-        // AuditLogService uses current TenantContext. We should temporarily set it to
-        // the invite's tenant for the log.
+        // AuditLogService uses current TenantContext. We temporarily set it for the
+        // log.
         UUID originalTenantId = TenantContext.getTenantId();
         try {
             TenantContext.setTenantId(invite.getTenantId());
             auditLogService.log("INVITE_ACCEPTED", "TENANT_INVITE", invite.getId(),
-                    "User " + user.getEmail() + " accepted invite and joined with role: " + invite.getRole());
+                    "User " + dbUser.getEmail() + " accepted invite and joined with role: " + invite.getRole());
         } finally {
             if (originalTenantId != null) {
                 TenantContext.setTenantId(originalTenantId);

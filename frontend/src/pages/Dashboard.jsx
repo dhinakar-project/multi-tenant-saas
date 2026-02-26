@@ -9,7 +9,7 @@ import FAQAccordion from '../components/FAQAccordion';
 
 function Dashboard() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
-    const { tenantSlug, tenantName, isBootstrapping, bootstrapError } = useTenant();
+    const { tenantSlug, tenantName, userRole, isAdmin, isBootstrapping, bootstrapError } = useTenant();
     const location = useLocation();
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
@@ -128,9 +128,20 @@ function Dashboard() {
                                 </div>
                                 <div>
                                     <p className="text-white font-bold text-lg">{tenantSlug}</p>
-                                    <div className="flex items-center space-x-1.5 mt-1">
-                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                        <span className="text-xs text-green-400 font-medium">Signed In</span>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <div className="flex items-center space-x-1.5">
+                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                            <span className="text-xs text-green-400 font-medium">Signed In</span>
+                                        </div>
+                                        {/* Role badge — Layer 1 UI visibility */}
+                                        {userRole && (
+                                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${isAdmin
+                                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                                : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                                                }`}>
+                                                {isAdmin ? 'Admin' : 'Member'}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -145,17 +156,20 @@ function Dashboard() {
                                 Create Ticket
                             </button>
                             <button
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => document.getElementById('tickets-section')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="btn-secondary w-full"
                             >
                                 View Tickets
                             </button>
-                            <button
-                                onClick={() => navigate('/admin')}
-                                className="btn-secondary w-full"
-                            >
-                                Admin Console
-                            </button>
+                            {/* Admin Console — Layer 1: Hidden from MEMBER users entirely */}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => navigate('/admin')}
+                                    className="btn-secondary w-full"
+                                >
+                                    Admin Console
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -267,7 +281,7 @@ function Dashboard() {
             </section>
 
             {/* Tickets Section */}
-            <section>
+            <section id="tickets-section">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold text-white">Your Tickets</h2>
                     <Link to="/tickets/new" className="btn-primary">

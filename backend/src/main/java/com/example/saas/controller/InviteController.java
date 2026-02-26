@@ -3,6 +3,7 @@ package com.example.saas.controller;
 import com.example.saas.model.TenantInvite;
 import com.example.saas.model.User;
 import com.example.saas.service.InviteService;
+import com.example.saas.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,8 @@ public class InviteController {
         return ResponseEntity.ok(invite);
     }
 
+    private final TenantService tenantService;
+
     @PostMapping("/accept")
     public ResponseEntity<Map<String, String>> acceptInvite(
             @RequestBody Map<String, String> request,
@@ -42,8 +45,8 @@ public class InviteController {
             return ResponseEntity.badRequest().body(Map.of("error", "Token is required"));
         }
 
-        log.info("User {} accepting invite token: {}", user.getEmail(), token);
-        inviteService.acceptInvite(token, user);
+        log.info("User {} accepting invite token via /accept endpoint: {}", user.getEmail(), token);
+        tenantService.bootstrapTenant(user, token);
 
         return ResponseEntity.ok(Map.of("message", "Invite accepted successfully"));
     }

@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import TicketCreate from './pages/TicketCreate';
 import TicketDetail from './pages/TicketDetail';
 import Admin from './pages/Admin';
+import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 import AuthHeader from './components/AuthHeader';
 import SignInPage from './pages/auth/SignInPage';
@@ -73,17 +74,15 @@ function App() {
                         </>
                     } />
 
-                    <Route path="/admin" element={
-                        <>
+                    {/* Admin-only Route — guarded by AdminRoute (Layer 2: Route Guard) */}
+                    <Route element={<AdminRoute />}>
+                        <Route path="/admin" element={
                             <SignedIn>
                                 <AuthHeader />
                                 <Layout><Admin /></Layout>
                             </SignedIn>
-                            <SignedOut>
-                                <Navigate to="/sign-in" replace />
-                            </SignedOut>
-                        </>
-                    } />
+                        } />
+                    </Route>
                 </Routes>
             </Router>
         </TenantProvider>

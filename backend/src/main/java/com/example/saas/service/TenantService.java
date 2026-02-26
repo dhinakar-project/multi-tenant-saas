@@ -1,6 +1,8 @@
 package com.example.saas.service;
 
 import com.example.saas.core.TenantContext;
+import com.example.saas.model.TenantInvite;
+import com.example.saas.service.InviteService;
 import com.example.saas.dto.TenantBootstrapResponse;
 import com.example.saas.dto.TenantRegisterRequest;
 import com.example.saas.dto.TenantResponse;
@@ -9,6 +11,7 @@ import com.example.saas.model.User;
 import com.example.saas.repository.TenantRepository;
 import com.example.saas.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +30,9 @@ public class TenantService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Lazy
+    private final InviteService inviteService;
 
     @Transactional
     public TenantResponse createTenant(TenantRegisterRequest request) {
@@ -72,15 +78,10 @@ public class TenantService {
      * Idempotent - safe to call multiple times.
      */
     @Transactional
-    public TenantBootstrapResponse bootstrapTenant(User user) {
-        // First, ensure user exists in database
-        // (user might be transient from ClerkAuthenticationFilter during bootstrap)
-        User dbUser = userRepository.findByClerkUserId(user.getClerkUserId())
-                .orElse(null);
+    public TenantBootstrapResponse bootstrapTenant(User user, String inviteToken) {
+        // Step 1: Ensure user exists in database or create transient entity
+        User dbUser = userRepository.findByClerkUserId(user.getClerkUserId()).orElse(null);
 
-        // Fallback: If not found by Clerk ID, try by email.
-        // Handles case where user registers through custom UI (/api/tenants) without
-        // Clerk ID initially.
         if (dbUser == null && user.getEmail() != null) {
             dbUser = userRepository.findByEmail(user.getEmail()).orElse(null);
             if (dbUser != null) {
@@ -89,42 +90,8 @@ public class TenantService {
             }
         }
 
-        if (dbUser != null) {
-            // User exists - check if they already have a tenant
-            Tenant existingTenant = tenantRepository.findFirstTenantByUserId(dbUser.getId())
-                    .orElse(null);
-
-            // Backward compatibility / safety net if user_tenants relationship was missed
-            if (existingTenant == null && dbUser.getTenantId() != null) {
-                existingTenant = tenantRepository.findById(dbUser.getTenantId()).orElse(null);
-                if (existingTenant != null) {
-                    assignUserToTenant(dbUser.getId(), existingTenant.getId(), "TENANT_ADMIN");
-                }
-            }
-
-            if (existingTenant != null) {
-                // User already has a tenant - return it
-                String role = getTenantRoleForUser(dbUser.getId(), existingTenant.getId());
-                return new TenantBootstrapResponse(
-                        existingTenant.getSlug(),
-                        existingTenant.getName(),
-                        role,
-                        false);
-            }
-        }
-
-        // Create new tenant for user
-        String tenantSlug = generateTenantSlug(user.getEmail());
-        String tenantName = user.getFullName() != null ? user.getFullName() + "'s Organization" : "My Organization";
-
-        Tenant newTenant = new Tenant();
-        newTenant.setSlug(tenantSlug);
-        newTenant.setName(tenantName);
-        newTenant = tenantRepository.save(newTenant);
-
-        // Create or update user with tenant_id
-        if (dbUser == null) {
-            // User doesn't exist - create them
+        boolean isNewUser = (dbUser == null);
+        if (isNewUser) {
             dbUser = new User();
             dbUser.setId(UUID.randomUUID());
             dbUser.setClerkUserId(user.getClerkUserId());
@@ -132,23 +99,69 @@ public class TenantService {
             dbUser.setFullName(user.getFullName());
             dbUser.setPassword(""); // Clerk handles auth
             dbUser.setActive(true);
-            dbUser.setTenantId(newTenant.getId()); // Set tenant_id to satisfy NOT NULL constraint
-
-            dbUser = userRepository.save(dbUser);
-        } else {
-            // User exists but has no tenant - update tenant_id
-            dbUser.setTenantId(newTenant.getId());
-            dbUser = userRepository.save(dbUser);
         }
 
-        // Assign user to tenant in user_tenants table
-        assignUserToTenant(dbUser.getId(), newTenant.getId(), "TENANT_ADMIN");
+        Tenant targetTenant = null;
+        String role = null;
+        boolean isNewTenant = false;
+        com.example.saas.model.TenantInvite validInvite = null;
+
+        // Step 2: Determine target tenant
+        if (inviteToken != null && !inviteToken.isBlank()) {
+            // If invite provided, validate it first
+            validInvite = inviteService.validateInvite(inviteToken);
+            targetTenant = tenantRepository.findById(validInvite.getTenantId())
+                    .orElseThrow(() -> new IllegalStateException("Invited tenant no longer exists"));
+            role = validInvite.getRole();
+        } else if (!isNewUser) {
+            // No invite, check if user already has a tenant
+            targetTenant = tenantRepository.findFirstTenantByUserId(dbUser.getId()).orElse(null);
+
+            // Backward compatibility / safety net
+            if (targetTenant == null && dbUser.getTenantId() != null) {
+                targetTenant = tenantRepository.findById(dbUser.getTenantId()).orElse(null);
+                if (targetTenant != null) {
+                    assignUserToTenant(dbUser.getId(), targetTenant.getId(), "TENANT_ADMIN");
+                }
+            }
+
+            if (targetTenant != null) {
+                role = getTenantRoleForUser(dbUser.getId(), targetTenant.getId());
+            }
+        }
+
+        // If still no target tenant, create a new personal tenant
+        if (targetTenant == null) {
+            String tenantSlug = generateTenantSlug(dbUser.getEmail());
+            String tenantName = dbUser.getFullName() != null ? dbUser.getFullName() + "'s Organization"
+                    : "My Organization";
+
+            targetTenant = new Tenant();
+            targetTenant.setSlug(tenantSlug);
+            targetTenant.setName(tenantName);
+            targetTenant = tenantRepository.save(targetTenant);
+            role = "TENANT_ADMIN";
+            isNewTenant = true;
+        }
+
+        // Step 3: Ensure User is persisted with the correct tenant_id
+        dbUser.setTenantId(targetTenant.getId());
+        dbUser = userRepository.save(dbUser); // Persists or updates the user
+
+        // Step 4: Ensure user_tenants relationship exists
+        // (Even if they already existed, ensure the role is set for the target tenant)
+        assignUserToTenant(dbUser.getId(), targetTenant.getId(), role);
+
+        // Step 5: Consume invite if one was used
+        if (validInvite != null) {
+            inviteService.consumeInvite(validInvite, dbUser);
+        }
 
         return new TenantBootstrapResponse(
-                newTenant.getSlug(),
-                newTenant.getName(),
-                "TENANT_ADMIN",
-                true);
+                targetTenant.getSlug(),
+                targetTenant.getName(),
+                role,
+                isNewTenant);
     }
 
     private String generateTenantSlug(String email) {

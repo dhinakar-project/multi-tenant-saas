@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
+import { useTenant } from '../context/TenantContext';
 
 function TicketDetail() {
     const { id } = useParams();
     const { getToken } = useAuth();
     const navigate = useNavigate();
+    const { isAdmin } = useTenant();
     const [ticket, setTicket] = useState(null);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
@@ -67,9 +69,9 @@ function TicketDetail() {
                 <div className="flex items-start justify-between mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">{ticket.title}</h1>
                     <span className={`px-4 py-2 text-sm font-bold rounded-lg ${ticket.priority === 'Urgent' ? 'bg-red-100 text-red-800' :
-                            ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
-                                ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-blue-100 text-blue-800'
+                        ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                            ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
                         }`}>
                         {ticket.priority}
                     </span>
@@ -81,9 +83,9 @@ function TicketDetail() {
                     <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-900">Status:</span>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${ticket.status === 'Open' ? 'bg-green-100 text-green-800' :
-                                ticket.status === 'InProgress' ? 'bg-blue-100 text-blue-800' :
-                                    ticket.status === 'Resolved' ? 'bg-purple-100 text-purple-800' :
-                                        'bg-gray-100 text-gray-800'
+                            ticket.status === 'InProgress' ? 'bg-blue-100 text-blue-800' :
+                                ticket.status === 'Resolved' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-gray-100 text-gray-800'
                             }`}>
                             {ticket.status}
                         </span>
@@ -93,18 +95,73 @@ function TicketDetail() {
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                    <label className="text-sm font-semibold text-gray-700">Change Status:</label>
-                    <select
-                        value={ticket.status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    >
-                        <option>Open</option>
-                        <option>InProgress</option>
-                        <option>Resolved</option>
-                        <option>Closed</option>
-                    </select>
+                {/* Status Control — RBAC-Aware */}
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                        {/* Label with lock icon for non-admins */}
+                        <label className="flex items-center space-x-1.5 text-sm font-semibold text-gray-700">
+                            <span>Change Status</span>
+                            {!isAdmin && (
+                                <svg
+                                    className="w-3.5 h-3.5 text-gray-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                    aria-label="Restricted"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            )}
+                            <span>:</span>
+                        </label>
+
+                        {/* Tooltip wrapper — only for non-admins */}
+                        <div
+                            className={!isAdmin ? 'relative group' : ''}
+                        >
+                            <select
+                                value={ticket.status}
+                                onChange={(e) => handleStatusChange(e.target.value)}
+                                disabled={!isAdmin}
+                                className={`px-4 py-2 border rounded-lg text-sm transition-all ${isAdmin
+                                        ? 'border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer bg-white text-gray-900'
+                                        : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60 select-none'
+                                    }`}
+                            >
+                                <option>Open</option>
+                                <option>InProgress</option>
+                                <option>Resolved</option>
+                                <option>Closed</option>
+                            </select>
+
+                            {/* Tooltip — visible on hover only for non-admins */}
+                            {!isAdmin && (
+                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 hidden group-hover:flex">
+                                    <div className="bg-gray-800 text-white text-xs font-medium rounded-lg px-3 py-2 whitespace-nowrap shadow-xl">
+                                        Only administrators can modify ticket status.
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Helper message for non-admins */}
+                    {!isAdmin && (
+                        <p className="flex items-center space-x-1.5 text-xs text-gray-400 pl-1">
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                            <span>Only administrators can modify ticket status.</span>
+                        </p>
+                    )}
                 </div>
             </div>
 
