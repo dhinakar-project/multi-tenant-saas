@@ -24,6 +24,8 @@ services:
       SPRING_DATASOURCE_USERNAME: saas_user
       SPRING_DATASOURCE_PASSWORD: Saas@123
       APPLICATION_SECURITY_JWT_SECRET_KEY: dev-secret
+      # Gemini AI — reads from your host shell env var (set before running docker compose)
+      GEMINI_API_KEY: AIzaSyAth41_sCXP3kiRMcZBypOFO6PyiRmgJxo
     ports:
       - "8081:8080"
     depends_on:

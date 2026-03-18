@@ -108,6 +108,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+
+        <!-- Gemini AI: we call the REST API directly via RestTemplate (already on classpath).
+             No extra dep needed — jackson-databind is provided by spring-boot-starter-web. -->
+        <!-- Async HTTP support for non-blocking Gemini calls -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

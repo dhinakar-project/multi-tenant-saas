@@ -1,0 +1,110 @@
+﻿
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.1)
+
+2026-02-26T20:13:22.275Z  INFO 1 --- [saas-backend] [           main] c.example.saas.SaasBackendApplication    : Starting SaasBackendApplication using Java 17.0.18 with PID 1 (/app/app.jar started by root in /app)
+2026-02-26T20:13:22.283Z  INFO 1 --- [saas-backend] [           main] c.example.saas.SaasBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-02-26T20:13:26.408Z  INFO 1 --- [saas-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-26T20:13:26.552Z  INFO 1 --- [saas-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 120 ms. Found 7 JPA repository interfaces.
+2026-02-26T20:13:29.072Z  INFO 1 --- [saas-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-02-26T20:13:29.104Z  INFO 1 --- [saas-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-26T20:13:29.105Z  INFO 1 --- [saas-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.17]
+2026-02-26T20:13:29.238Z  INFO 1 --- [saas-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-02-26T20:13:29.241Z  INFO 1 --- [saas-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 6718 ms
+2026-02-26T20:13:29.894Z  INFO 1 --- [saas-backend] [           main] c.e.saas.security.ClerkJwtValidator      : ClerkJwtValidator initialized with JWKS URL: https://leading-mackerel-20.clerk.accounts.dev/.well-known/jwks.json
+2026-02-26T20:13:30.149Z  INFO 1 --- [saas-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-26T20:13:30.601Z  INFO 1 --- [saas-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@778113f2
+2026-02-26T20:13:30.609Z  INFO 1 --- [saas-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-26T20:13:30.912Z  INFO 1 --- [saas-backend] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-02-26T20:13:30.912Z  INFO 1 --- [saas-backend] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-02-26T20:13:30.912Z  INFO 1 --- [saas-backend] [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-02-26T20:13:30.955Z  INFO 1 --- [saas-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://mysql:3306/multitenant_saas (MySQL 8.0)
+2026-02-26T20:13:31.078Z  INFO 1 --- [saas-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 9 migrations (execution time 00:00.060s)
+2026-02-26T20:13:31.104Z  INFO 1 --- [saas-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `multitenant_saas`: 9
+2026-02-26T20:13:31.115Z  INFO 1 --- [saas-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema `multitenant_saas` is up to date. No migration necessary.
+2026-02-26T20:13:31.423Z  INFO 1 --- [saas-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-26T20:13:31.597Z  INFO 1 --- [saas-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2026-02-26T20:13:31.692Z  INFO 1 --- [saas-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-26T20:13:32.251Z  INFO 1 --- [saas-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-26T20:13:32.385Z  WARN 1 --- [saas-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: MySQL8Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-02-26T20:13:32.389Z  WARN 1 --- [saas-backend] [           main] org.hibernate.orm.deprecation            : HHH90000026: MySQL8Dialect has been deprecated; use org.hibernate.dialect.MySQLDialect instead
+2026-02-26T20:13:36.180Z  INFO 1 --- [saas-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-26T20:13:36.241Z  INFO 1 --- [saas-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-26T20:13:37.469Z  INFO 1 --- [saas-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-26T20:13:39.340Z  WARN 1 --- [saas-backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-26T20:13:40.944Z  INFO 1 --- [saas-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+2026-02-26T20:13:41.165Z  INFO 1 --- [saas-backend] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@2c226db0, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@13b012, org.springframework.security.web.context.SecurityContextHolderFilter@2db15764, org.springframework.security.web.header.HeaderWriterFilter@77e8492f, org.springframework.web.filter.CorsFilter@2f4a89fa, org.springframework.security.web.authentication.logout.LogoutFilter@63916a3, com.example.saas.security.TenantFilter@3ce2c454, com.example.saas.security.ClerkAuthenticationFilter@788a7567, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@60a54ad2, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@5f83b506, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@4ac7f844, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@7a337217, org.springframework.security.web.session.SessionManagementFilter@7980eb2, org.springframework.security.web.access.ExceptionTranslationFilter@2b35dde3, org.springframework.security.web.access.intercept.AuthorizationFilter@1bb1ba54]
+2026-02-26T20:13:43.333Z  INFO 1 --- [saas-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-02-26T20:13:43.373Z  INFO 1 --- [saas-backend] [           main] c.example.saas.SaasBackendApplication    : Started SaasBackendApplication in 22.316 seconds (process running for 23.476)
+2026-02-26T20:13:44.704Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-02-26T20:13:44.704Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-02-26T20:13:44.707Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-02-26T20:13:45.900Z  INFO 1 --- [saas-backend] [0.0-8080-exec-1] c.e.s.c.TenantBootstrapController        : Bootstrapping tenant for user: user_3AAkThkkKQayF0uj82URRZyFXZS@clerk.local (Clerk ID: user_3AAkThkkKQayF0uj82URRZyFXZS)
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:13:46.074Z  INFO 1 --- [saas-backend] [0.0-8080-exec-1] c.e.s.c.TenantBootstrapController        : Tenant bootstrap complete: slug=user-3aakthkkkqayf0uj82urrzyfxzs-org, isNew=false
+2026-02-26T20:13:46.076Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] com.example.saas.service.TicketService   : TicketService.getAllTickets called. Page: 0, Size: 10, Status: null
+2026-02-26T20:13:46.077Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] com.example.saas.service.TicketService   : Current TenantContext ID before fetch: 0e35ac26-566d-46b0-a764-13bb55f9d1ef
+2026-02-26T20:13:46.145Z  INFO 1 --- [saas-backend] [0.0-8080-exec-2] com.example.saas.service.TicketService   : Tickets retrieved: 1
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:13:46.355Z  INFO 1 --- [saas-backend] [0.0-8080-exec-3] com.example.saas.service.TicketService   : TicketService.getAllTickets called. Page: 0, Size: 10, Status: null
+2026-02-26T20:13:46.355Z  INFO 1 --- [saas-backend] [0.0-8080-exec-3] com.example.saas.service.TicketService   : Current TenantContext ID before fetch: 0e35ac26-566d-46b0-a764-13bb55f9d1ef
+2026-02-26T20:13:46.369Z  INFO 1 --- [saas-backend] [0.0-8080-exec-3] com.example.saas.service.TicketService   : Tickets retrieved: 1
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:14:07.732Z  INFO 1 --- [saas-backend] [0.0-8080-exec-6] com.example.saas.service.TicketService   : TicketService.getAllTickets called. Page: 0, Size: 10, Status: null
+2026-02-26T20:14:07.732Z  INFO 1 --- [saas-backend] [0.0-8080-exec-6] com.example.saas.service.TicketService   : Current TenantContext ID before fetch: 0e35ac26-566d-46b0-a764-13bb55f9d1ef
+2026-02-26T20:14:07.739Z  INFO 1 --- [saas-backend] [0.0-8080-exec-6] com.example.saas.service.TicketService   : Tickets retrieved: 1
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:14:07.826Z  INFO 1 --- [saas-backend] [0.0-8080-exec-7] com.example.saas.service.TicketService   : TicketService.getAllTickets called. Page: 0, Size: 10, Status: null
+2026-02-26T20:14:07.826Z  INFO 1 --- [saas-backend] [0.0-8080-exec-7] com.example.saas.service.TicketService   : Current TenantContext ID before fetch: 0e35ac26-566d-46b0-a764-13bb55f9d1ef
+2026-02-26T20:14:07.832Z  INFO 1 --- [saas-backend] [0.0-8080-exec-7] com.example.saas.service.TicketService   : Tickets retrieved: 1
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:14:21.193Z  INFO 1 --- [saas-backend] [.0-8080-exec-10] c.e.saas.controller.InviteController     : Creating invite for email: frgefrgvergv@gmail.com with role: MEMBER
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:19:50.999Z  INFO 1 --- [saas-backend] [0.0-8080-exec-3] c.e.saas.controller.InviteController     : Creating invite for email: dhinakar79044@gmail.com with role: MEMBER
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+2026-02-26T20:20:04.779Z  INFO 1 --- [saas-backend] [0.0-8080-exec-5] c.e.s.c.TenantBootstrapController        : Bootstrapping tenant for user: user_3AAkThkkKQayF0uj82URRZyFXZS@clerk.local (Clerk ID: user_3AAkThkkKQayF0uj82URRZyFXZS)
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:20:04.797Z  INFO 1 --- [saas-backend] [0.0-8080-exec-5] c.e.s.c.TenantBootstrapController        : Tenant bootstrap complete: slug=user-3aakthkkkqayf0uj82urrzyfxzs-org, isNew=false
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+DEBUG_INTERCEPTOR: Resolving slug: [user-3aakthkkkqayf0uj82urrzyfxzs-org]
+DEBUG_INTERCEPTOR: Slug length: 36
+DEBUG_INTERCEPTOR: Exists in DB? true
+2026-02-26T20:20:09.276Z  INFO 1 --- [saas-backend] [0.0-8080-exec-7] c.e.saas.controller.InviteController     : Creating invite for email: dhinakar79044@gmail.com with role: MEMBER

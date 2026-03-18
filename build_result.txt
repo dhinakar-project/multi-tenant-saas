@@ -1,0 +1,287 @@
+﻿
+time="2026-03-18T13:53:
+04+05:30" 
+level=warning msg="The 
+\"GEMINI_API_KEY\" 
+variable is not set. 
+Defaulting to a blank 
+string."
+ Image multi_tenant_saa
+s_project-backend 
+Building 
+#2 [internal] load 
+build definition from 
+Dockerfile
+#8 [build 1/5] FROM doc
+ker.io/library/maven:3.
+9-eclipse-temurin-17@sh
+a256:c3c2003efc0754af8d
+e21d6ff7192aa3ea614f048
+fc9f0aaf3286b880fcd0a78
+#10 [internal] load 
+build context
+#11 [build 2/5] 
+WORKDIR /app
+#12 [build 3/5] COPY 
+pom.xml .
+#13 [build 4/5] COPY 
+src ./src
+#14 [build 5/5] RUN 
+mvn clean package 
+-DskipTests
+#14 4.302 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/infinispan/inf
+inispan-build-configura
+tion-parent/14.0.21.Fin
+al/infinispan-build-con
+figuration-parent-14.0.
+21.Final.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+org/infinispan/infinisp
+an-build-configuration-
+parent/14.0.21.Final/in
+finispan-build-configur
+ation-parent-14.0.21.Fi
+nal.pom (24 kB at 566 
+kB/s)
+#14 6.514 [INFO] 
+Building saas-backend 
+0.0.1-SNAPSHOT
+#14 10.94 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/io/smallrye/smallr
+ye-build-parent/39/smal
+lrye-build-parent-39.po
+m
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+io/smallrye/smallrye-bu
+ild-parent/39/smallrye-
+build-parent-39.pom 
+(28 kB at 708 kB/s)
+#14 11.92 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/springframewor
+k/data/build/spring-dat
+a-parent/3.2.1/spring-d
+ata-parent-3.2.1.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+org/springframework/dat
+a/build/spring-data-par
+ent/3.2.1/spring-data-p
+arent-3.2.1.pom (41 kB 
+at 1.1 MB/s)
+#14 11.96 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/springframewor
+k/data/build/spring-dat
+a-build/3.2.1/spring-da
+ta-build-3.2.1.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+org/springframework/dat
+a/build/spring-data-bui
+ld/3.2.1/spring-data-bu
+ild-3.2.1.pom (7.3 kB 
+at 253 kB/s)
+#14 13.58 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/com/google/errorpr
+one/error_prone_annotat
+ions/2.18.0/error_prone
+_annotations-2.18.0.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+com/google/errorprone/e
+rror_prone_annotations/
+2.18.0/error_prone_anno
+tations-2.18.0.pom 
+(2.2 kB at 53 kB/s)
+#14 13.62 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/com/google/errorpr
+one/error_prone_parent/
+2.18.0/error_prone_pare
+nt-2.18.0.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+com/google/errorprone/e
+rror_prone_parent/2.18.
+0/error_prone_parent-2.
+18.0.pom (11 kB at 292 
+kB/s)
+#14 15.56 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/assertj/assert
+j-build/3.24.2/assertj-
+build-3.24.2.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+org/assertj/assertj-bui
+ld/3.24.2/assertj-build
+-3.24.2.pom (8.8 kB at 
+251 kB/s)
+#14 22.67 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/com/google/errorpr
+one/error_prone_annotat
+ions/2.18.0/error_prone
+_annotations-2.18.0.jar
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+com/google/errorprone/e
+rror_prone_annotations/
+2.18.0/error_prone_anno
+tations-2.18.0.jar (16 
+kB at 3.4 kB/s)
+#14 26.39 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/sonatype/plexu
+s/plexus-build-api/0.0.
+7/plexus-build-api-0.0.
+7.pom
+Downloaded from 
+central: https://repo.m
+aven.apache.org/maven2/
+org/sonatype/plexus/ple
+xus-build-api/0.0.7/ple
+xus-build-api-0.0.7.pom
+ (3.2 kB at 73 kB/s)
+#14 26.90 Downloading 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/sonatype/plexu
+s/plexus-build-api/0.0.
+7/plexus-build-api-0.0.
+7.jar
+#14 26.93 Downloaded 
+from central: https://r
+epo.maven.apache.org/ma
+ven2/org/sonatype/plexu
+s/plexus-build-api/0.0.
+7/plexus-build-api-0.0.
+7.jar (8.5 kB at 292 
+kB/s)
+#14 30.62 [ERROR] 
+COMPILATION ERROR : 
+#14 30.62 [ERROR] /app/
+src/main/java/com/examp
+le/saas/service/GeminiS
+ervice.java:[181,12] 
+cannot find symbol
+#14 30.62 [INFO] 1 
+error
+#14 30.62 [INFO] BUILD 
+FAILURE
+#14 30.63 [ERROR] 
+Failed to execute goal 
+org.apache.maven.plugin
+s:maven-compiler-plugin
+:3.13.0:compile 
+(default-compile) on 
+project saas-backend: 
+Compilation failure
+#14 30.63 [ERROR] /app/
+src/main/java/com/examp
+le/saas/service/GeminiS
+ervice.java:[181,12] 
+cannot find symbol
+#14 30.63 [ERROR]   
+symbol:   class TicketC
+ategorizationResult
+#14 30.63 [ERROR]   
+location: class com.exa
+mple.saas.service.Gemin
+iService
+#14 30.63 [ERROR] 
+#14 30.63 [ERROR] -> 
+[Help 1]
+#14 30.63 [ERROR] 
+#14 30.63 [ERROR] To 
+see the full stack 
+trace of the errors, 
+re-run Maven with the 
+-e switch.
+#14 30.63 [ERROR] 
+Re-run Maven using the 
+-X switch to enable 
+full debug logging.
+#14 30.63 [ERROR] 
+#14 30.63 [ERROR] For 
+more information about 
+the errors and 
+possible solutions, 
+please read the 
+following articles:
+#14 30.63 [ERROR] 
+[Help 1] http://cwiki.a
+pache.org/confluence/di
+splay/MAVEN/MojoFailure
+Exception
+#14 ERROR: process 
+"/bin/sh -c mvn clean 
+package -DskipTests" 
+did not complete 
+successfully: exit 
+code: 1
+ > [build 5/5] RUN mvn 
+clean package 
+-DskipTests:
+30.63 [ERROR]   
+symbol:   class TicketC
+ategorizationResult
+30.63 [ERROR]   
+location: class com.exa
+mple.saas.service.Gemin
+iService
+30.63 [ERROR] 
+30.63 [ERROR] -> [Help 
+1]
+30.63 [ERROR] 
+30.63 [ERROR] To see 
+the full stack trace 
+of the errors, re-run 
+Maven with the -e 
+switch.
+30.63 [ERROR] Re-run 
+Maven using the -X 
+switch to enable full 
+debug logging.
+30.63 [ERROR] 
+30.63 [ERROR] For more 
+information about the 
+errors and possible 
+solutions, please read 
+the following articles:
+30.63 [ERROR] [Help 1] 
+http://cwiki.apache.org
+/confluence/display/MAV
+EN/MojoFailureException
+failed to solve: 
+process "/bin/sh -c 
+mvn clean package 
+-DskipTests" did not 
+complete successfully: 
+exit code: 1
+
+

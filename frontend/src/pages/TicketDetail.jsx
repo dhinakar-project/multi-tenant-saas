@@ -4,6 +4,94 @@ import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
 import { useTenant } from '../context/TenantContext';
 
+function AiInsightsCard({ ticket }) {
+    const { aiStatus, aiCategory, aiSuggestedPriority, aiConfidence, aiReasoning } = ticket;
+
+    if (!aiStatus || aiStatus === 'PENDING') {
+        return (
+            <div className="glass-card-light p-6 border-l-4 border-purple-400">
+                <div className="flex items-center space-x-3">
+                    <span className="text-purple-600 font-semibold text-lg">✦ AI Analysis</span>
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 bg-purple-50 text-purple-600 text-xs font-medium rounded-full animate-pulse">
+                        <span>AI analysis in progress...</span>
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
+    if (aiStatus === 'FAILED') {
+        return (
+            <div className="glass-card-light p-6 border-l-4 border-gray-300">
+                <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 font-semibold">✦ AI Analysis</span>
+                    <span className="text-xs text-gray-400 italic">AI analysis unavailable</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (aiStatus === 'DONE') {
+        const confidencePct = aiConfidence != null ? Math.round(aiConfidence * 100) : null;
+        const priorityColors = {
+            Low: 'bg-blue-100 text-blue-700',
+            Medium: 'bg-yellow-100 text-yellow-700',
+            High: 'bg-orange-100 text-orange-700',
+            Critical: 'bg-red-100 text-red-700',
+        };
+
+        return (
+            <div className="glass-card-light p-6 border-l-4 border-purple-500">
+                <h3 className="text-purple-700 font-bold text-lg mb-4">✦ AI Analysis</h3>
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        {aiCategory && (
+                            <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 mb-1 font-medium">Category</span>
+                                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                                    {aiCategory}
+                                </span>
+                            </div>
+                        )}
+                        {aiSuggestedPriority && (
+                            <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 mb-1 font-medium">Suggested Priority</span>
+                                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${priorityColors[aiSuggestedPriority] || 'bg-gray-100 text-gray-700'}`}>
+                                    {aiSuggestedPriority}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {confidencePct !== null && (
+                        <div>
+                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span className="font-medium">Confidence</span>
+                                <span>{confidencePct}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                    className="bg-purple-500 h-2 rounded-full transition-all duration-700"
+                                    style={{ width: `${confidencePct}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {aiReasoning && (
+                        <div>
+                            <span className="text-xs text-gray-500 font-medium block mb-1">Reasoning</span>
+                            <p className="text-sm text-gray-700 italic">"{aiReasoning}"</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return null;
+}
+
 function TicketDetail() {
     const { id } = useParams();
     const { getToken } = useAuth();
@@ -164,6 +252,9 @@ function TicketDetail() {
                     )}
                 </div>
             </div>
+
+            {/* AI Insights Card */}
+            <AiInsightsCard ticket={ticket} />
 
             {/* Comments Card */}
             <div className="glass-card-light p-8">

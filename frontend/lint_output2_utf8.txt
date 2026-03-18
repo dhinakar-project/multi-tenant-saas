@@ -1,0 +1,96 @@
+﻿
+> saas-frontend@0.0.0 lint
+> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\App.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\AdminRoute.jsx
+  1:8   error  'React' is defined but never used             no-unused-vars
+  8:39  error  'isReady' is assigned a value but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\AuthHeader.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\ErrorCard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\FAQAccordion.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\FeatureCard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\KanbanBoard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\Layout.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\AdminModeModal.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\AdminSidebar.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\AuditTimeline.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\RoleBadge.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\StatCard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\components\admin\TenantSwitcher.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\context\AuthContext.jsx
+   1:8   error    'React' is defined but never used                                                                                               no-unused-vars
+  26:23  error    'decoded' is assigned a value but never used                                                                                    no-unused-vars
+  72:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\context\TenantContext.jsx
+  1:8   error    'React' is defined but never used                                                                                               no-unused-vars
+  7:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Admin.jsx
+    1:8   error  'React' is defined but never used  no-unused-vars
+  518:80  error  Empty block statement              no-empty
+  521:84  error  Empty block statement              no-empty
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Dashboard.jsx
+    1:8    error  'React' is defined but never used                                no-unused-vars
+   13:25   error  'tenantName' is assigned a value but never used                  no-unused-vars
+   14:11   error  'location' is assigned a value but never used                    no-unused-vars
+  244:112  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Join.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Login.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Projects.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\Signup.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\TicketCreate.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\TicketDetail.jsx
+   1:8  error    'React' is defined but never used                                                                             no-unused-vars
+  47:8  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\auth\SignInPage.jsx
+   1:8   error  'React' is defined but never used                                no-unused-vars
+  57:32  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\frontend\src\pages\auth\SignUpPage.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+Γ£û 37 problems (34 errors, 3 warnings)
+

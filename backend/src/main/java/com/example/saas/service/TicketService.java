@@ -1,9 +1,11 @@
 package com.example.saas.service;
 
+import com.example.saas.dto.TicketCreateRequest;
 import com.example.saas.model.Ticket;
 import com.example.saas.model.User;
 import com.example.saas.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,55 +23,48 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final AuditLogService auditLogService;
+    private final TicketCategorizationService ticketCategorizationService;
 
-    // PATCH 3: Pagination support
     public Page<Ticket> getAllTickets(int page, int size, String sort, String status) {
-        log.info("TicketService.getAllTickets called. Page: {}, Size: {}, Status: {}", page, size, status);
-        log.info("Current TenantContext ID before fetch: {}", com.example.saas.core.TenantContext.getTenantId());
-
+        log.info("getAllTickets | page={}, size={}, status={}", page, size, status);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sort));
 
-        Page<Ticket> result;
         if (status != null && !status.isEmpty()) {
-            result = ticketRepository.findAllByStatus(status, pageable);
-        } else {
-            result = ticketRepository.findAll(pageable);
+            return ticketRepository.findAllByStatus(status, pageable);
         }
-
-        log.info("Tickets retrieved: {}", result.getTotalElements());
-        return result;
+        return ticketRepository.findAll(pageable);
     }
 
     public Ticket getTicket(UUID id) {
-        return ticketRepository.findById(id).orElseThrow(() -> new RuntimeException("Ticket not found"));
+        return ticketRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Ticket not found: " + id));
     }
 
     @Transactional
-    public Ticket createTicket(String title, String description, String priority) {
-        log.info("TicketService.createTicket called. Title: {}, Priority: {}", title, priority);
+    public Ticket createTicket(TicketCreateRequest request) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info("Current user: {} (ID: {})", currentUser.getUsername(), currentUser.getId());
-
-        // Ensure tenantId exists
-        log.info("Current TenantContext ID: {}", com.example.saas.core.TenantContext.getTenantId());
+        log.info("createTicket | user={}, tenantId={}", currentUser.getId(),
+            com.example.saas.core.TenantContext.getTenantId());
 
         Ticket ticket = new Ticket();
-        ticket.setTitle(title);
-        ticket.setDescription(description);
-        ticket.setPriority(priority);
+        ticket.setTitle(request.getTitle());
+        ticket.setDescription(request.getDescription());
+        ticket.setPriority(request.getPriority());
         ticket.setStatus("Open");
         ticket.setCreatedBy(currentUser.getId());
+        ticket.setProjectId(request.getProjectId());   // ✅ now persisted
+        ticket.setAiCategory(request.getAiCategory()); // ✅ AI suggestion stored
+        ticket.setAiStatus("PENDING");
 
-        log.info("Saving ticket to repository...");
-        try {
-            Ticket saved = ticketRepository.save(ticket);
-            log.info("Ticket saved successfully with ID: {}", saved.getId());
-            auditLogService.log("TICKET_CREATED", "TICKET", saved.getId(), "Created ticket: " + title);
-            return saved;
-        } catch (Exception e) {
-            log.error("Exception occurred while saving ticket!", e);
-            throw e;
-        }
+        Ticket saved = ticketRepository.save(ticket);
+        auditLogService.log("TICKET_CREATED", "TICKET", saved.getId(),
+            "Created ticket: " + request.getTitle() +
+                (request.getAiCategory() != null ? " [AI category: " + request.getAiCategory() + "]" : ""));
+
+        // Trigger async AI categorization (runs in background thread pool)
+        ticketCategorizationService.categorizeAsync(saved.getId(), saved.getTitle(), saved.getDescription());
+
+        return saved;
     }
 
     @Transactional
@@ -81,7 +74,7 @@ public class TicketService {
         ticket.setStatus(status);
         Ticket saved = ticketRepository.save(ticket);
         auditLogService.log("TICKET_STATUS_CHANGED", "TICKET", saved.getId(),
-                "Status changed from " + oldStatus + " to " + status);
+            "Status: " + oldStatus + " → " + status);
         return saved;
     }
 
@@ -90,7 +83,8 @@ public class TicketService {
         Ticket ticket = getTicket(id);
         ticket.setAssigneeId(assigneeId);
         Ticket saved = ticketRepository.save(ticket);
-        auditLogService.log("TICKET_ASSIGNED", "TICKET", saved.getId(), "Assigned to user ID: " + assigneeId);
+        auditLogService.log("TICKET_ASSIGNED", "TICKET", saved.getId(),
+            "Assigned to: " + assigneeId);
         return saved;
     }
 }

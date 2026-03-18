@@ -2,12 +2,11 @@ package com.example.saas.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.UUID;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Getter
 @Setter
@@ -24,10 +23,31 @@ public class Ticket extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    private String status;
+    private String status;  // "Open", "In Progress", "Closed"
 
     @Column(nullable = false)
-    private String priority;
+    private String priority; // "High", "Medium", "Low", "Urgent"
+
+    // ✅ FIX: projectId was referenced in TicketSpecification but missing from entity
+    @Column(name = "project_id")
+    @JdbcTypeCode(SqlTypes.CHAR)
+    private UUID projectId;
+
+    // ✅ NEW: AI-suggested category stored at creation time
+    @Column(name = "ai_category")
+    private String aiCategory;
+
+    @Column(name = "ai_suggested_priority")
+    private String aiSuggestedPriority;
+
+    @Column(name = "ai_confidence", precision = 4, scale = 2)
+    private java.math.BigDecimal aiConfidence;
+
+    @Column(name = "ai_reasoning")
+    private String aiReasoning;
+
+    @Column(name = "ai_status")
+    private String aiStatus = "PENDING";
 
     @Column(name = "assignee_id")
     @JdbcTypeCode(SqlTypes.CHAR)

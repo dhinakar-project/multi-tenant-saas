@@ -333,7 +333,16 @@ function Dashboard() {
                                 ) : (
                                     tickets.map((ticket) => (
                                         <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{ticket.title}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span>{ticket.title}</span>
+                                                    {ticket.aiCategory && (
+                                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                                                            {ticket.aiCategory}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ticket.status === 'Open' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                                     }`}>

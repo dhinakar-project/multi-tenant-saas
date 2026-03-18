@@ -36,3 +36,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+# Google Gemini AI Configuration
+# Key is injected via GEMINI_API_KEY environment variable
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  api:
+    key: ${GEMINI_API_KEY:}
+  model: gemini-2.0-flash
