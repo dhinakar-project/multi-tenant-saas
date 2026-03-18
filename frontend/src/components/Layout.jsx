@@ -14,7 +14,6 @@ function Layout({ children }) {
     const location = useLocation();
     const { isAdmin, userRole } = useTenant();
 
-    // Admin mode modal state
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [adminModalVariant, setAdminModalVariant] = useState('confirm');
 
@@ -43,80 +42,140 @@ function Layout({ children }) {
 
     return (
         <div className="min-h-screen">
-            {/* ── Top Navigation Bar ──────────────────────────────────────── */}
-            <nav className="sticky top-0 z-50 glass-card border-b border-white/10">
-                <div className="container-custom">
-                    <div className="flex justify-between items-center h-16">
+            <nav
+                className="sticky top-0 z-50 flex items-center"
+                style={{
+                    height: '64px',
+                    background: 'rgba(5, 6, 15, 0.6)',
+                    backdropFilter: 'blur(24px) saturate(200%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+                    boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+                }}
+            >
+                {/* Subtle violet glow line at top border */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.8) 30%, rgba(99,102,241,0.9) 50%, rgba(139,92,246,0.8) 70%, transparent 100%)'
+                }}></div>
+
+                <div className="container-custom w-full relative z-10">
+                    <div className="flex justify-between items-center h-full">
                         {/* Left: Brand + Nav Links */}
-                        <div className="flex items-center space-x-8">
-                            <Link to="/dashboard" className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                    <span className="text-white font-bold text-sm">ST</span>
+                        <div className="flex items-center gap-6">
+                            <Link to="/dashboard" className="flex items-center gap-3 group" style={{ textDecoration: 'none' }}>
+                                <div style={{
+                                    width: '28px',
+                                    height: '28px',
+                                    background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 0 16px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+                                    animation: 'pulse-glow 3s ease-in-out infinite'
+                                }}>
+                                    <span style={{ color: 'white', fontSize: '14px', lineHeight: 1 }}>◆</span>
                                 </div>
-                                <span className="font-bold text-white text-lg drop-shadow-lg">SaaS Tickets</span>
+                                <span style={{
+                                    color: 'white',
+                                    fontWeight: 700,
+                                    fontSize: '15px',
+                                    letterSpacing: '-0.02em'
+                                }}>SaaS Tickets</span>
                             </Link>
 
                             {isSignedIn && (
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center gap-1 border-l border-white/10 pl-6 ml-2">
                                     <Link
                                         to="/dashboard"
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive('/dashboard')
-                                            ? 'bg-white/20 text-white'
-                                            : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                                        className="transition-all rounded-lg"
+                                        style={isActive('/dashboard') ? {
+                                            color: 'white',
+                                            background: 'rgba(139,92,246,0.12)',
+                                            border: '1px solid rgba(139,92,246,0.3)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            boxShadow: '0 0 12px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+                                        } : {
+                                            color: 'rgba(148,163,184,0.8)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            border: '1px solid transparent'
+                                        }}
+                                        onMouseEnter={e => { if (!isActive('/dashboard')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; }}}
+                                        onMouseLeave={e => { if (!isActive('/dashboard')) { e.currentTarget.style.color = 'rgba(148,163,184,0.8)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; }}}
                                     >
                                         Dashboard
                                     </Link>
 
-                                    {/* Admin nav — triggers modal, not direct navigation */}
                                     <button
                                         onClick={handleAdminClick}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${isAdminPath
-                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                            : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
-                                        style={isAdminPath ? { boxShadow: '0 0 12px rgba(251,191,36,0.2)' } : {}}
+                                        className="transition-all rounded-lg flex items-center gap-2"
+                                        style={isAdminPath ? {
+                                            color: 'white',
+                                            background: 'rgba(139,92,246,0.12)',
+                                            border: '1px solid rgba(139,92,246,0.3)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            boxShadow: '0 0 12px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+                                        } : {
+                                            color: 'rgba(148,163,184,0.8)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            border: '1px solid transparent'
+                                        }}
+                                        onMouseEnter={e => { if (!isAdminPath) { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; }}}
+                                        onMouseLeave={e => { if (!isAdminPath) { e.currentTarget.style.color = 'rgba(148,163,184,0.8)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; }}}
                                     >
-                                        {isAdminPath && (
-                                            <span style={{
-                                                display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
-                                                background: '#fbbf24', boxShadow: '0 0 6px #fbbf24',
-                                            }} />
-                                        )}
                                         Admin
-                                        {isAdminPath && (
-                                            <span style={{
-                                                fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
-                                                padding: '1px 5px', borderRadius: 4,
-                                                background: 'rgba(251,191,36,0.25)', color: '#fbbf24',
-                                                border: '1px solid rgba(251,191,36,0.35)',
-                                            }}>
-                                                MODE
-                                            </span>
-                                        )}
                                     </button>
                                 </div>
                             )}
                         </div>
 
                         {/* Right: Tenant switcher + user + logout */}
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                             {isSignedIn && (
                                 <>
-                                    <TenantSwitcher />
+                                    <div className="flex items-center gap-3">
+                                        <TenantSwitcher />
+                                        
+                                        {/* Divider */}
+                                        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)', margin: '0 8px' }}></div>
 
-                                    {/* Role badge */}
-                                    {userRole && <RoleBadge role={userRole} />}
+                                        {userRole && <RoleBadge role={userRole} />}
 
-                                    {/* User display name (hidden on small screens) */}
-                                    <span className="text-sm text-gray-300 hidden md:block max-w-[120px] truncate">
-                                        {user?.fullName || user?.primaryEmailAddress?.emailAddress || 'User'}
-                                    </span>
+                                        <span style={{ color: 'rgba(203,213,225,0.8)', fontSize: '13px', fontWeight: 500 }} className="hidden md:block max-w-[140px] truncate ml-1">
+                                            {user?.fullName || user?.primaryEmailAddress?.emailAddress || 'User'}
+                                        </span>
 
-                                    <button
-                                        onClick={handleLogout}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-red-500/20 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
-                                    >
-                                        Logout
-                                    </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            style={{
+                                                color: 'rgba(148,163,184,0.7)',
+                                                fontSize: '13px',
+                                                fontWeight: 500,
+                                                padding: '6px 12px',
+                                                borderRadius: '8px',
+                                                border: '1px solid rgba(255,255,255,0.07)',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                transition: 'all 150ms ease'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(148,163,184,0.7)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                                        >
+                                            Log out
+                                        </button>
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -124,12 +183,10 @@ function Layout({ children }) {
                 </div>
             </nav>
 
-            {/* ── Page Content ─────────────────────────────────────────────── */}
-            <main className="container-custom py-8">
+            <main className="container-custom py-10">
                 {children}
             </main>
 
-            {/* ── Admin Mode Modal ─────────────────────────────────────────── */}
             {showAdminModal && (
                 <AdminModeModal
                     variant={adminModalVariant}
