@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
 import { useTenant } from '../context/TenantContext';
+import VoiceAssistant from '../components/VoiceAssistant';
 
 function AiInsightsCard({ ticket }) {
     const { aiStatus, aiCategory, aiSuggestedPriority, aiConfidence, aiReasoning } = ticket;
@@ -327,6 +328,16 @@ function TicketDetail() {
                     </div>
                 </form>
             </div>
+
+            {/* Voice AI Assistant — floats bottom-right, explains this ticket */}
+            {ticket && (
+                <VoiceAssistant
+                    mode="ticket"
+                    ticketId={id}
+                    ticketTitle={ticket.title || ''}
+                />
+            )}
+
         </div>
     );
 }

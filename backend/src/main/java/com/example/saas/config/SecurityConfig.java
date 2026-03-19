@@ -65,6 +65,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/invites").hasRole("TENANT_ADMIN")
                         .requestMatchers("/api/users/**").hasRole("TENANT_ADMIN")
                         .requestMatchers("/api/audit-logs/**").hasRole("TENANT_ADMIN")
+
+                        // ✅ Vapi Voice AI — /llm is public (Vapi cannot send Clerk JWT)
+                        //                   /config is authenticated (frontend uses Clerk JWT)
+                        .requestMatchers("/api/vapi/llm", "/api/vapi/llm/**").permitAll()
+                        .requestMatchers("/api/vapi/config").authenticated()
+
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
 
@@ -100,20 +106,29 @@ public class SecurityConfig {
 
     /**
      * CORS configuration supporting both localhost and LAN access.
-     * Uses allowedOriginPatterns for wildcard support (recommended when using
-     * credentials).
+     * The /api/vapi/llm endpoint uses a separate permissive config because
+     * Vapi's servers call it from public IPs that are not in our localhost allowlist.
      */
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow specific localhost origins and LAN IP ranges
+        // ── 1. Permissive config for Vapi's LLM endpoint ────────────────────
+        // Vapi calls /api/vapi/llm from their own servers (public IPs).
+        // allowCredentials must be false when allowedOrigins is "*".
+        CorsConfiguration vapiConfig = new CorsConfiguration();
+        vapiConfig.setAllowedOriginPatterns(List.of("*"));
+        vapiConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
+        vapiConfig.setAllowedHeaders(List.of("*"));
+        vapiConfig.setAllowCredentials(false);
+
+        // ── 2. Strict config for all other endpoints ─────────────────────────
+        CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
-                "http://localhost:3001", // Docker frontend
+                "http://localhost:3001",
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001", // Docker frontend
+                "http://127.0.0.1:3001",
                 "http://127.0.0.1:5173",
                 "http://192.168.*.*:*",
                 "http://10.*.*.*:*",
@@ -133,14 +148,15 @@ public class SecurityConfig {
                 "http://172.29.*.*:*",
                 "http://172.30.*.*:*",
                 "http://172.31.*.*:*"));
-
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Slug"));
         configuration.setExposedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/vapi/llm", vapiConfig);
+        source.registerCorsConfiguration("/api/vapi/llm/**", vapiConfig); // Cover trailing slash
+        source.registerCorsConfiguration("/**", configuration);          // Everything else
         return source;
     }
 }

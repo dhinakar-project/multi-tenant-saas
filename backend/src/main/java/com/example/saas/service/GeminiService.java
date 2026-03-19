@@ -212,6 +212,18 @@ public class GeminiService {
     }
 
     // ─────────────────────────────────────────────────────────
+    // FEATURE 5: Voice assistant response (used by VapiConversationService)
+    // ─────────────────────────────────────────────────────────
+    public String generateVoiceResponse(String prompt) {
+        try {
+            return callGemini(prompt);
+        } catch (Exception e) {
+            log.error("Voice response generation failed: {}", e.getMessage());
+            return "I'm having trouble connecting right now. Please try again in a moment.";
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
     // PRIVATE HELPER — Single entry point for all Gemini calls
     // ─────────────────────────────────────────────────────────
 

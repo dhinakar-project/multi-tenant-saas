@@ -4,6 +4,7 @@ import { useTenant } from '../context/TenantContext';
 import api, { setClerkTokenGetter } from '../api/api';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ErrorCard from '../components/ErrorCard';
+import VoiceAssistant from '../components/VoiceAssistant';
 
 function Dashboard() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -560,6 +561,9 @@ function Dashboard() {
                     Built with Spring Boot 3 · React 18 · Gemini AI · Clerk · MySQL 8
                 </div>
             </footer>
+
+            {/* Voice AI Assistant — Admin only, floats bottom-right */}
+            {isAdmin && <VoiceAssistant mode="dashboard" />}
 
         </div>
     );
