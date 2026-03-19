@@ -227,6 +227,7 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/actuator") ||
                 path.startsWith("/v3/api-docs") ||
                 path.startsWith("/swagger-ui") ||
+                path.startsWith("/api/vapi") ||   // Vapi server-to-server call — no Clerk JWT
                 path.equals("/error");
     }
 }

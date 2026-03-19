@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
@@ -19,18 +21,20 @@ services:
     build: ./backend
     container_name: mt_backend
     restart: unless-stopped
+    env_file:
+      - .env.local        # auto-loads VAPI_PUBLIC_KEY, VAPI_ASSISTANT_ID, VAPI_BACKEND_URL, GEMINI_API_KEY
     environment:
+      # These override / supplement env_file values
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/multitenant_saas?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: saas_user
       SPRING_DATASOURCE_PASSWORD: Saas@123
       APPLICATION_SECURITY_JWT_SECRET_KEY: dev-secret
-      # Gemini AI — reads from your host shell env var (set before running docker compose)
-      GEMINI_API_KEY: AIzaSyAS66tBiebZ45B5MEfFMFU61n9glEgjuNI
     ports:
       - "8081:8080"
     depends_on:
       mysql:
         condition: service_healthy
+
 
   frontend:
     build: ./frontend

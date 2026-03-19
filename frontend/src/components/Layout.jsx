@@ -5,6 +5,7 @@ import { useTenant } from '../context/TenantContext';
 import AdminModeModal from './admin/AdminModeModal';
 import TenantSwitcher from './admin/TenantSwitcher';
 import RoleBadge from './admin/RoleBadge';
+import VoiceAssistant from './VoiceAssistant';
 
 function Layout({ children }) {
     const { isSignedIn } = useAuth();
@@ -194,6 +195,9 @@ function Layout({ children }) {
                     onClose={() => setShowAdminModal(false)}
                 />
             )}
+
+            {/* Global floating AI robot — persists across all authenticated pages */}
+            {isSignedIn && <VoiceAssistant mode="dashboard" />}
         </div>
     );
 }
