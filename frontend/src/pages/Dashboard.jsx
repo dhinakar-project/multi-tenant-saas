@@ -111,49 +111,171 @@ function Dashboard() {
         <div className="animate-fade-up">
 
             {/* ──────────────────────────────────────────────────────────── */}
-            {/* SECTION 1: HERO WELCOME BANNER                               */}
+            {/* SECTION 1: HERO WELCOME BANNER — Horizontal Split Layout      */}
             {/* ──────────────────────────────────────────────────────────── */}
             <section className="mb-16">
-                <div className="glass-card p-10 flex flex-col lg:flex-row justify-between items-center gap-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10 relative overflow-hidden">
-                    {/* Background glows */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+                <div className="glass-card relative overflow-hidden" style={{
+                    background: 'linear-gradient(135deg, rgba(10,10,30,0.95) 0%, rgba(20,15,50,0.95) 100%)',
+                    border: '1px solid rgba(99,102,241,0.15)',
+                    borderRadius: 20,
+                    padding: '48px 56px',
+                }}>
+                    {/* Background ambient glows */}
+                    <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }}></div>
+                    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)', transform: 'translate(20%, 30%)' }}></div>
 
-                    <div className="flex-1 relative z-10">
-                        <span className="badge badge-ai mb-4 px-3 py-1 text-xs">✦ AI-Powered Ticket Management</span>
-                        <h1 className="text-white text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight">
-                            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">{tenantName || tenantSlug}</span>!
-                        </h1>
-                        <p className="text-slate-400 text-lg mb-8 max-w-xl leading-relaxed">
-                            Your workspace is running smoothly. Tracking {tickets.length} tickets across your organization with native Gemini AI integration.
-                        </p>
-                        
-                        <div className="flex flex-wrap items-center gap-4">
-                            <button onClick={() => navigate('/tickets/new')} className="btn-primary space-x-2 text-[15px] px-6 py-3">
-                                <span>Create Ticket</span>
-                                <span className="opacity-70">→</span>
-                            </button>
-                            
-                            {isAdmin && (
-                                <button onClick={() => navigate('/admin')} className="btn-secondary text-[15px] px-6 py-3 border-slate-700/50 bg-slate-800/30">
-                                    View Admin Console
+                    {/* Two-column grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '48px', alignItems: 'center', position: 'relative', zIndex: 10 }}>
+
+                        {/* ── LEFT: Text + CTAs ── */}
+                        <div>
+                            {/* Badge */}
+                            <div style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '4px 14px', borderRadius: 999,
+                                background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)',
+                                color: '#a5b4fc', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em',
+                                marginBottom: 20,
+                            }}>
+                                <span style={{ color: '#818cf8' }}>✦</span> AI-Powered Ticket Management
+                            </div>
+
+                            {/* Heading */}
+                            <h1 style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', fontWeight: 800, lineHeight: 1.15, color: '#fff', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+                                Welcome back,{' '}
+                                <span style={{ background: 'linear-gradient(90deg, #818cf8, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                                    {tenantName || tenantSlug}
+                                </span>!
+                            </h1>
+
+                            {/* Subtitle */}
+                            <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.65, margin: '0 0 32px', maxWidth: 480 }}>
+                                Your workspace is running smoothly. Tracking {tickets.length} tickets across your organization with native Gemini AI integration.
+                            </p>
+
+                            {/* CTA Buttons */}
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                <button
+                                    onClick={() => navigate('/tickets/new')}
+                                    style={{
+                                        padding: '11px 28px', borderRadius: 10, border: 'none',
+                                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                        color: '#fff', fontWeight: 700, fontSize: 14,
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                                        boxShadow: '0 4px 20px rgba(99,102,241,0.45)',
+                                        transition: 'transform 200ms, box-shadow 200ms',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(99,102,241,0.6)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.45)'; }}
+                                >
+                                    Create Ticket <span style={{ opacity: 0.8 }}>→</span>
                                 </button>
-                            )}
-                        </div>
-                    </div>
 
-                    <div className="hidden lg:flex flex-col gap-3 min-w-[280px] relative z-10">
-                        <div className="glass-card-dark p-4 flex items-center gap-4 border-emerald-500/20 bg-emerald-500/5">
-                            <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
-                            <span className="text-emerald-300 text-sm font-semibold tracking-wide">AI Categorization Active</span>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => navigate('/admin')}
+                                        style={{
+                                            padding: '11px 28px', borderRadius: 10,
+                                            border: '1px solid rgba(255,255,255,0.15)',
+                                            background: 'rgba(255,255,255,0.06)', color: '#cbd5e1',
+                                            fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                                            transition: 'all 200ms',
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#cbd5e1'; }}
+                                    >
+                                        View Admin Console
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="glass-card-dark p-4 flex items-center gap-4 border-violet-500/20 bg-violet-500/5">
-                            <div className="w-2.5 h-2.5 bg-violet-400 rounded-full shadow-[0_0_8px_rgba(167,139,250,0.8)] animate-pulse"></div>
-                            <span className="text-violet-300 text-sm font-semibold tracking-wide">Tenant Isolated ({tenantSlug})</span>
-                        </div>
-                        <div className="glass-card-dark p-4 flex items-center gap-4 border-blue-500/20 bg-blue-500/5">
-                            <div className="w-2.5 h-2.5 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)] animate-pulse"></div>
-                            <span className="text-blue-300 text-sm font-semibold tracking-wide">Real-time DB Connected</span>
+
+                        {/* ── RIGHT: Robot Avatar + Voice Button + Status ── */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, minWidth: 220 }}>
+                            {/* AI Voice Assistant Label */}
+                            <div style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '4px 12px', borderRadius: 999, marginBottom: 14,
+                                background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+                                color: '#a5b4fc', fontSize: 11, fontWeight: 600,
+                            }}>
+                                <span style={{ fontSize: 10 }}>✦</span> AI Voice Assistant
+                            </div>
+
+                            {/* Glowing Robot Orb */}
+                            <div
+                                style={{ position: 'relative', width: 200, height: 200, cursor: 'pointer', flexShrink: 0 }}
+                                onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
+                            >
+                                {/* Outer glow ring */}
+                                <div style={{
+                                    position: 'absolute', inset: -8,
+                                    borderRadius: '50%',
+                                    background: 'conic-gradient(from 0deg, rgba(99,102,241,0.6), rgba(139,92,246,0.15), rgba(59,130,246,0.5), rgba(99,102,241,0.6))',
+                                    animation: 'spin 6s linear infinite',
+                                    filter: 'blur(2px)',
+                                }}></div>
+                                {/* Dark ring separator */}
+                                <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', background: 'rgba(10,10,30,0.95)' }}></div>
+                                {/* Robot container */}
+                                <div style={{
+                                    position: 'relative', width: '100%', height: '100%',
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle at 35% 35%, rgba(30,27,75,1) 0%, rgba(10,10,30,1) 100%)',
+                                    border: '1px solid rgba(99,102,241,0.25)',
+                                    boxShadow: '0 0 60px rgba(99,102,241,0.4), inset 0 0 40px rgba(99,102,241,0.08)',
+                                    overflow: 'hidden',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    animation: 'robotHover 4s ease-in-out infinite',
+                                }}>
+                                    {/* Inner gradient overlay */}
+                                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 60% 40%, rgba(99,102,241,0.15) 0%, transparent 60%)' }}></div>
+                                    <img
+                                        src="/ai_robot_avatar.png"
+                                        alt="AI Agent"
+                                        style={{ width: '88%', height: '88%', objectFit: 'contain', position: 'relative', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.7))' }}
+                                    />
+                                    {/* Glowing dots on ring */}
+                                    <div style={{ position: 'absolute', top: 12, right: 18, width: 8, height: 8, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 8px #60a5fa' }}></div>
+                                    <div style={{ position: 'absolute', bottom: 20, left: 14, width: 6, height: 6, borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 6px #818cf8' }}></div>
+                                </div>
+                            </div>
+
+                            {/* Talk to AI Button */}
+                            <button
+                                onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
+                                style={{
+                                    marginTop: 18, padding: '10px 22px', borderRadius: 999,
+                                    border: '1px solid rgba(99,102,241,0.35)',
+                                    background: 'rgba(15,15,40,0.8)', color: '#c4b5fd',
+                                    fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    boxShadow: '0 0 20px rgba(99,102,241,0.15)',
+                                    transition: 'all 200ms', backdropFilter: 'blur(8px)',
+                                    width: '100%', justifyContent: 'center',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(99,102,241,0.3)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(15,15,40,0.8)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(99,102,241,0.15)'; }}
+                            >
+                                <svg style={{ width: 15, height: 15, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                                Talk to AI Assistant
+                            </button>
+
+                            {/* Status pills — vertical stack under avatar */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14, alignSelf: 'stretch' }}>
+                                {[
+                                    { dot: '#4ade80', text: 'AI Categorization Active' },
+                                    { dot: '#a78bfa', text: 'Voice Powered by Gemini' },
+                                    { dot: '#60a5fa', text: 'Real-time Data' },
+                                ].map(({ dot, text }) => (
+                                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: dot, boxShadow: `0 0 6px ${dot}`, flexShrink: 0 }}></div>
+                                        <span style={{ color: '#94a3b8', fontSize: 12, fontWeight: 500 }}>{text}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -561,9 +683,6 @@ function Dashboard() {
                     Built with Spring Boot 3 · React 18 · Gemini AI · Clerk · MySQL 8
                 </div>
             </footer>
-
-            {/* Voice AI Assistant — Admin only, floats bottom-right */}
-            {isAdmin && <VoiceAssistant mode="dashboard" />}
 
         </div>
     );
