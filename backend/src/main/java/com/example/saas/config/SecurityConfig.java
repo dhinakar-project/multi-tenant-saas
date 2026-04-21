@@ -147,7 +147,8 @@ public class SecurityConfig {
                 "http://172.28.*.*:*",
                 "http://172.29.*.*:*",
                 "http://172.30.*.*:*",
-                "http://172.31.*.*:*"));
+                "http://172.31.*.*:*",
+                "https://multi-tenant-saas-lilac.vercel.app"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Slug"));
         configuration.setExposedHeaders(List.of("*"));
