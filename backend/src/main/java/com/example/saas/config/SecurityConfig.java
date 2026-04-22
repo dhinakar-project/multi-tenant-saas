@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
 
                         // ✅ protected endpoints — TENANT_ADMIN only
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated() // self-delete: any auth user
                         .requestMatchers("/api/admin/**").hasRole("TENANT_ADMIN")
                         .requestMatchers("/api/invites").hasRole("TENANT_ADMIN")
                         .requestMatchers("/api/users/**").hasRole("TENANT_ADMIN")

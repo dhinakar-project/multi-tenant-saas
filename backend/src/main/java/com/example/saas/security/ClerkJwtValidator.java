@@ -83,28 +83,69 @@ public class ClerkJwtValidator {
     }
 
     /**
-     * Extract email from Clerk JWT (if present).
+     * Extract email from Clerk JWT.
+     * Tries multiple claim names since Clerk JWT template can use different keys.
+     * Returns null if not present (no email claim configured in Clerk JWT template).
      */
     public String extractEmail(DecodedJWT jwt) {
-        return jwt.getClaim("email").asString();
+        // Standard claim added via Clerk JWT template
+        String email = safeClaimString(jwt, "email");
+        if (email != null) return email;
+        // Alternative key some templates use
+        email = safeClaimString(jwt, "primary_email_address");
+        if (email != null) return email;
+        return null;
     }
 
     /**
      * Extract full name from Clerk JWT (if present).
+     *
+     * Checks multiple claim names to handle both default Clerk JWTs and
+     * custom session token templates. Returns null (never a Clerk user ID)
+     * so that callers can fall back to email-derived names safely.
      */
     public String extractFullName(DecodedJWT jwt) {
-        String firstName = jwt.getClaim("given_name").asString();
-        String lastName = jwt.getClaim("family_name").asString();
+        // Try first_name + last_name (set via Clerk session token template)
+        String firstName = safeClaimString(jwt, "first_name");
+        String lastName  = safeClaimString(jwt, "last_name");
 
-        if (firstName != null && lastName != null) {
-            return firstName + " " + lastName;
-        } else if (firstName != null) {
-            return firstName;
-        } else if (lastName != null) {
-            return lastName;
+        // Also check OpenID standard claim names as secondary option
+        if (firstName == null) firstName = safeClaimString(jwt, "given_name");
+        if (lastName  == null) lastName  = safeClaimString(jwt, "family_name");
+
+        if (firstName != null || lastName != null) {
+            String combined = ((firstName != null ? firstName : "") + " " +
+                               (lastName  != null ? lastName  : "")).trim();
+            return combined.isEmpty() ? null : combined;
         }
 
-        // Fallback to name claim
-        return jwt.getClaim("name").asString();
+        // Try full_name or name as last resort, but reject Clerk-ID-looking values
+        String fullName = safeClaimString(jwt, "full_name");
+        if (fullName == null) fullName = safeClaimString(jwt, "name");
+
+        return isClerkIdLike(fullName) ? null : fullName;
+    }
+
+    /**
+     * Returns the claim as a non-blank String, or null.
+     */
+    private String safeClaimString(DecodedJWT jwt, String claim) {
+        try {
+            String val = jwt.getClaim(claim).asString();
+            return (val == null || val.isBlank()) ? null : val.trim();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns true when the string looks like a Clerk user ID or random token
+     * rather than a human name — e.g. "user_3cieqgmntiqwdyatvfppngqimxs".
+     */
+    private boolean isClerkIdLike(String value) {
+        if (value == null) return false;
+        // Matches "user_<alphanum>" or any 20+ char lowercase-alphanum-only string
+        return value.toLowerCase().startsWith("user_")
+                || value.matches("[a-z0-9]{20,}");
     }
 }

@@ -139,6 +139,30 @@ function Layout({ children }) {
                                     >
                                         Admin
                                     </button>
+
+                                    <Link
+                                        to="/settings"
+                                        className="transition-all rounded-lg"
+                                        style={isActive('/settings') ? {
+                                            color: 'white',
+                                            background: 'rgba(139,92,246,0.12)',
+                                            border: '1px solid rgba(139,92,246,0.3)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            boxShadow: '0 0 12px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+                                        } : {
+                                            color: 'rgba(148,163,184,0.8)',
+                                            padding: '6px 12px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 500,
+                                            border: '1px solid transparent'
+                                        }}
+                                        onMouseEnter={e => { if (!isActive('/settings')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; }}}
+                                        onMouseLeave={e => { if (!isActive('/settings')) { e.currentTarget.style.color = 'rgba(148,163,184,0.8)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; }}}
+                                    >
+                                        Settings
+                                    </Link>
                                 </div>
                             )}
                         </div>

@@ -11,6 +11,7 @@ import com.example.saas.model.User;
 import com.example.saas.repository.TenantRepository;
 import com.example.saas.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TenantService {
@@ -99,6 +101,13 @@ public class TenantService {
             dbUser.setFullName(user.getFullName());
             dbUser.setPassword(""); // Clerk handles auth
             dbUser.setActive(true);
+        } else {
+            // Sync latest name from JWT on every login so a real name is picked up
+            // once the Clerk JWT template is configured (fixes stale DB values too)
+            String freshName = user.getFullName();
+            if (freshName != null && !freshName.isBlank()) {
+                dbUser.setFullName(freshName);
+            }
         }
 
         Tenant targetTenant = null;
@@ -130,11 +139,34 @@ public class TenantService {
             }
         }
 
+        // Auto-heal: fix bad tenant names saved before the Clerk name fix.
+        // Runs on every login for existing tenants — no manual DB cleanup needed.
+        if (targetTenant != null && !isNewTenant) {
+            String existingName = targetTenant.getName();
+            boolean isBadName = existingName == null
+                    || existingName.isBlank()
+                    || existingName.toLowerCase().startsWith("user_")
+                    || existingName.toLowerCase().startsWith("user ")
+                    || existingName.equalsIgnoreCase("My Organization")
+                    || existingName.equalsIgnoreCase("Clerk User's Organization")
+                    || existingName.matches(".*[a-z0-9]{20,}.*");
+
+            if (isBadName) {
+                String healedName = deriveOrgName(dbUser);
+                // Only persist if we actually derived a better name
+                if (healedName != null && !healedName.equals(existingName)) {
+                    targetTenant.setName(healedName);
+                    targetTenant = tenantRepository.save(targetTenant);
+                    log.info("[TenantService] Auto-healed bad tenant name '{}' -> '{}'", existingName, healedName);
+                }
+            }
+        }
+
         // If still no target tenant, create a new personal tenant
         if (targetTenant == null) {
             String tenantSlug = generateTenantSlug(dbUser.getEmail());
-            String tenantName = dbUser.getFullName() != null ? dbUser.getFullName() + "'s Organization"
-                    : "My Organization";
+            String tenantName = deriveOrgName(dbUser);
+            if (tenantName == null) tenantName = "My Organization";
 
             targetTenant = new Tenant();
             targetTenant.setSlug(tenantSlug);
@@ -185,5 +217,55 @@ public class TenantService {
     private String getTenantRoleForUser(UUID userId, UUID tenantId) {
         return userRepository.findTenantRoleForUser(userId.toString(), tenantId.toString())
                 .orElse("MEMBER");
+    }
+
+    /**
+     * Derives a clean organisation name from the user's real name or email prefix.
+     * Used for both new tenant creation and auto-healing bad existing names.
+     *
+     * Priority:
+     *  1. user.getFullName() — if it is a real human name (not a Clerk placeholder/ID)
+     *  2. Email prefix capitalised — e.g. "antigravitydummy@gmail.com" → "Antigravitydummy's Organization"
+     */
+    private String deriveOrgName(User user) {
+        String rawName = user.getFullName();
+
+        boolean nameIsGeneric = rawName == null
+                || rawName.isBlank()
+                || rawName.equalsIgnoreCase("Clerk User")
+                || rawName.equalsIgnoreCase("User")
+                || rawName.toLowerCase().startsWith("user_")
+                || rawName.toLowerCase().startsWith("user ")
+                || rawName.matches(".*[a-z0-9]{20,}.*");
+
+        if (!nameIsGeneric) {
+            return rawName + "'s Organization";
+        }
+
+        // Guard: don't derive a name from Clerk's fake @clerk.local fallback email.
+        // This email is only used when the JWT has no email claim (Clerk JWT template
+        // not configured). Return null so the caller uses a safe neutral default.
+        String email = user.getEmail();
+        if (email == null || email.endsWith("@clerk.local")) {
+            log.warn("[TenantService] Cannot derive org name: no real email in JWT. "
+                    + "Configure Clerk JWT template to include email/first_name/last_name claims.");
+            return null;
+        }
+
+        // Fall back to email prefix
+        // e.g. "antigravitydummy@gmail.com" → "Antigravitydummy's Organization"
+        String emailPrefix = email.split("@")[0]
+                .replaceAll("[^a-zA-Z0-9]", " ")
+                .trim();
+        String[] words = emailPrefix.split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                sb.append(Character.toUpperCase(word.charAt(0)))
+                  .append(word.substring(1).toLowerCase())
+                  .append(" ");
+            }
+        }
+        return sb.toString().trim() + "'s Organization";
     }
 }

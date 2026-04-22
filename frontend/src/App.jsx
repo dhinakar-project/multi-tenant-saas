@@ -5,6 +5,7 @@ import { TenantProvider } from './context/TenantContext';
 import Dashboard from './pages/Dashboard';
 import TicketCreate from './pages/TicketCreate';
 import TicketDetail from './pages/TicketDetail';
+import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
@@ -67,6 +68,18 @@ function App() {
                             <SignedIn>
                                 <AuthHeader />
                                 <Layout><TicketDetail /></Layout>
+                            </SignedIn>
+                            <SignedOut>
+                                <Navigate to="/sign-in" replace />
+                            </SignedOut>
+                        </>
+                    } />
+
+                    <Route path="/settings" element={
+                        <>
+                            <SignedIn>
+                                <AuthHeader />
+                                <Layout><Settings /></Layout>
                             </SignedIn>
                             <SignedOut>
                                 <Navigate to="/sign-in" replace />

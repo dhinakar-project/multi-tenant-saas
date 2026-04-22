@@ -60,7 +60,9 @@ export const TenantProvider = ({ children }) => {
                 console.log(`[TenantContext] Bootstrap complete: ${slug} (new: ${isNewTenant}, role: ${role})`);
 
                 setTenantSlug(slug);
-                setTenantName(name);
+                // Guard against Clerk placeholder names leaking to the UI
+                const cleanName = (n) => (!n || n.startsWith('Clerk User') || n === 'User') ? null : n;
+                setTenantName(cleanName(name) ?? slug);
                 setUserRole(role || null); // Store role for UI-level RBAC guards
 
                 // Store in localStorage for axios interceptor

@@ -171,7 +171,7 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
         user.setTenantId(tenant.getId());
         user.setClerkUserId(clerkUserId);
         user.setEmail(email != null ? email : clerkUserId + "@clerk.local");
-        user.setFullName(fullName != null ? fullName : "Clerk User");
+        user.setFullName(fullName); // null is intentional — TenantService derives name from email
         user.setPassword(""); // No password - Clerk handles auth
         user.setActive(true);
 
@@ -195,7 +195,7 @@ public class ClerkAuthenticationFilter extends OncePerRequestFilter {
         user.setTenantId(null); // No tenant yet - will be assigned during bootstrap
         user.setClerkUserId(clerkUserId);
         user.setEmail(email != null ? email : clerkUserId + "@clerk.local");
-        user.setFullName(fullName != null ? fullName : "Clerk User");
+        user.setFullName(fullName); // null is intentional — TenantService derives name from email
         user.setPassword(""); // No password - Clerk handles auth
         user.setActive(true);
 
