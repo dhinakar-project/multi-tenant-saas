@@ -1,3 +1,4 @@
+com\example\saas\dto\PagedResponse.class
 com\example\saas\service\MetricsService.class
 com\example\saas\dto\UserDTO.class
 com\example\saas\security\ClerkJwtValidator.class
@@ -13,6 +14,7 @@ com\example\saas\service\VapiConversationService.class
 com\example\saas\repository\TenantRepository.class
 com\example\saas\service\InviteService.class
 com\example\saas\core\TenantContext.class
+com\example\saas\exception\ResourceNotFoundException.class
 com\example\saas\model\Project.class
 com\example\saas\model\User.class
 com\example\saas\service\GeminiService.class
@@ -44,13 +46,14 @@ com\example\saas\controller\TenantController.class
 com\example\saas\dto\AiSuggestResponse.class
 com\example\saas\repository\CommentRepository.class
 com\example\saas\repository\UserRepository.class
+com\example\saas\config\RequestIdFilter.class
 com\example\saas\model\Comment.class
 com\example\saas\service\TicketService.class
+com\example\saas\config\RateLimitConfig.class
 com\example\saas\repository\ProjectRepository.class
 com\example\saas\dto\AuthenticationResponse.class
 com\example\saas\controller\CommentController.class
 com\example\saas\security\TenantFilter.class
-com\example\saas\controller\VapiConfigController.class
 com\example\saas\model\TenantInvite.class
 com\example\saas\controller\TicketController.class
 com\example\saas\controller\UserController.class

@@ -1,6 +1,7 @@
 package com.example.saas.service;
 
 import com.example.saas.dto.TicketCreateRequest;
+import com.example.saas.exception.ResourceNotFoundException;
 import com.example.saas.model.Ticket;
 import com.example.saas.model.User;
 import com.example.saas.repository.TicketRepository;
@@ -25,6 +26,7 @@ public class TicketService {
     private final AuditLogService auditLogService;
     private final TicketCategorizationService ticketCategorizationService;
 
+    @Transactional(readOnly = true)
     public Page<Ticket> getAllTickets(int page, int size, String sort, String status) {
         log.info("getAllTickets | page={}, size={}, status={}", page, size, status);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sort));
@@ -35,9 +37,10 @@ public class TicketService {
         return ticketRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
     public Ticket getTicket(UUID id) {
         return ticketRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Ticket not found: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
     }
 
     @Transactional

@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
 import { useTenant } from '../context/TenantContext';
 import VoiceAssistant from '../components/VoiceAssistant';
+import { SkeletonList } from '../components/SkeletonCard';
 
 function AiInsightsCard({ ticket }) {
     const { aiStatus, aiCategory, aiSuggestedPriority, aiConfidence, aiReasoning } = ticket;
@@ -158,8 +159,8 @@ function TicketDetail() {
 
     if (!ticket) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-[3px] border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="max-w-4xl mx-auto p-8 mt-10">
+                <SkeletonList count={3} lines={5} />
             </div>
         );
     }

@@ -2,6 +2,7 @@ package com.example.saas.controller;
 
 import com.example.saas.core.TenantContext;
 import com.example.saas.dto.UserDTO;
+import com.example.saas.exception.ResourceNotFoundException;
 import com.example.saas.model.User;
 import com.example.saas.repository.UserRepository;
 import com.example.saas.service.AuditLogService;
@@ -87,7 +88,7 @@ public class UserController {
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<Void> disableUser(@PathVariable UUID id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
         user.setActive(false);
         userRepository.save(user);
         auditLogService.log("USER_DISABLED", "USER", id, "Disabled user: " + user.getEmail());

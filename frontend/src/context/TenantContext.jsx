@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';

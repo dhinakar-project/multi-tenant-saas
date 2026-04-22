@@ -1,4 +1,4 @@
-﻿# Environment files — NEVER commit these
+# Environment files — NEVER commit these
 .env
 .env.local
 .env.*.local
@@ -9,14 +9,63 @@ frontend/.env.local
 # Maven compiled output
 backend/target/
 
-# Logs and temp files
+# Logs and temp files (root level)
 *.log
 *.txt
+b_error*.txt
+b_logs*.txt
+b_success*.txt
+backend_build_log.txt
+backend_final_logs*.txt
+backend_logs*.txt
+build_full.txt
+build_log.txt
+build_output.txt
+build_quick.txt
+build_result.txt
+cf.log
 cf.txt
-error.txt
+cf2.txt
+clean_logs.txt
+compile_utf8.txt
+debug_output.json
+debug_output.txt
+docker_backend_logs*.txt
 docker_logs.txt
-vapi_tunnel.log
+docker-output.log
+err.log
+err2.log
+error.txt
+frontend_logs*.txt
+log_tail*.txt
+logs.txt
+mt_backend.log
+mt_backend_latest_logs.txt
+mt_backend_logs*.txt
+mt_logs*.txt
 ngrok_requests.json
+vapi_test.txt
+vapi_tunnel.log
+test_invite_flow.js
+backend2.log
+
+# Backend specific logs
+backend/boot.log
+backend/build.log
+backend/build_ai_log*.txt
+backend/build_log*.txt
+backend/build_output*.txt
+backend/compile_all.txt
+backend/compile_error*.log
+backend/compile_errors*.txt
+backend/compile_out*.txt
+backend/compile_utf8*.txt
+backend/logs2.txt
+backend/run_utf8.txt
+
+# Frontend specific logs
+frontend/build_output.txt
+frontend/lint_output*.txt
 
 # Node modules
 frontend/node_modules/
@@ -33,3 +82,10 @@ frontend/dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Miscellaneous markdown docs we don't want tracked
+CORS_FIX_VERIFICATION.md
+FIXES_SUMMARY.md
+MOBILE_ACCESS_SETUP.md
+MOBILE_LAN_VERIFY.md
+verify-mobile-access.ps1

@@ -1,5 +1,6 @@
 package com.example.saas.service;
 
+import com.example.saas.exception.ResourceNotFoundException;
 import com.example.saas.model.Project;
 import com.example.saas.model.User;
 import com.example.saas.repository.ProjectRepository;
@@ -22,13 +23,15 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final AuditLogService auditLogService;
 
+    @Transactional(readOnly = true)
     public Page<Project> getAllProjects(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return projectRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
     public Project getProject(UUID id) {
-        return projectRepository.findById(id).orElseThrow(() -> new RuntimeException("Project not found"));
+        return projectRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Project", id));
     }
 
     @Transactional

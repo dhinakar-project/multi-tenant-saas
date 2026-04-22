@@ -1,5 +1,6 @@
 package com.example.saas.controller;
 
+import com.example.saas.dto.PagedResponse;
 import com.example.saas.dto.TicketCreateRequest;
 import com.example.saas.model.Ticket;
 import com.example.saas.service.TicketCategorizationService;
@@ -7,7 +8,6 @@ import com.example.saas.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +26,12 @@ public class TicketController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'MEMBER')")
-    public Page<Ticket> getAllTickets(
+    public PagedResponse<Ticket> getAllTickets(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(required = false) String status) {
-        return ticketService.getAllTickets(page, size, sort, status);
+        return PagedResponse.of(ticketService.getAllTickets(page, size, sort, status));
     }
 
     @GetMapping("/{id}")

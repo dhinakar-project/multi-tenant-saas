@@ -69,7 +69,7 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
     })();
 
     return () => { dead = true; try { vapi?.stop(); } catch (_) {} };
-  }, [getToken]); // eslint-disable-line
+  }, [getToken]);  
 
   /* ── Start / stop ─────────────────────────────────────────────────────── */
   const startCall = async () => {
@@ -133,12 +133,22 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
       {isExpanded && (
         <div style={{
           position:'fixed', inset:0, zIndex:9998,
-          background:'linear-gradient(to bottom, rgba(2,4,20,.92), rgba(5,10,35,.96))',
-          backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+          background:'rgba(2,4,20,.6)',
+          backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)',
           animation:'overlayIn .3s ease',
           display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-          gap:0,
         }}>
+          <div style={{
+            position:'relative',
+            width:'90%', maxWidth:'480px',
+            background:'linear-gradient(to bottom, rgba(15,23,42,.92), rgba(5,10,35,.98))',
+            border:'1px solid rgba(139,92,246,0.3)',
+            borderRadius:'28px',
+            boxShadow:'0 25px 50px -12px rgba(0,0,0,0.6), 0 0 40px rgba(99,102,241,0.15)',
+            padding:'40px 24px',
+            display:'flex', flexDirection:'column', alignItems:'center',
+            overflow:'hidden'
+          }}>
           {/* Background ambient orbs */}
           <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none'}}>
             <div style={{position:'absolute',top:'20%',left:'30%',width:'400px',height:'400px',borderRadius:'50%',background:'radial-gradient(circle, rgba(99,202,255,.12) 0%, transparent 70%)',animation:'glowBreath 4s ease-in-out infinite'}} />
@@ -231,6 +241,7 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
           >
             ✕ &nbsp; End Chat
           </button>
+          </div>
         </div>
       )}
 

@@ -35,6 +35,8 @@ public class GeminiService {
     // FEATURE 1: Suggest category + priority from title/desc
     // ─────────────────────────────────────────────────────────
     public AiSuggestResponse suggestCategoryAndPriority(String title, String description) {
+        String safeTitle = sanitize(title);
+        String safeDesc  = sanitize(description);
         String prompt = """
             You are a support ticket classifier for an enterprise SaaS product.
             Analyze the following ticket and return a JSON object with exactly these two fields:
@@ -51,7 +53,7 @@ public class GeminiService {
 
             Respond ONLY with a raw JSON object. No markdown, no explanation, no code blocks.
             Example: {"priority":"High","category":"Bug"}
-            """.formatted(title, description != null ? description : "(no description)");
+            """.formatted(safeTitle, safeDesc.isEmpty() ? "(no description)" : safeDesc);
 
         String rawResponse = callGemini(prompt);
 
@@ -117,6 +119,9 @@ public class GeminiService {
             return new AiSuggestResponse(null, null, null, new ArrayList<>());
         }
 
+        String safeTitle = sanitize(newTitle);
+        String safeDesc  = sanitize(newDescription);
+
         StringBuilder existingList = new StringBuilder();
         for (int i = 0; i < existingOpenTickets.size(); i++) {
             Ticket t = existingOpenTickets.get(i);
@@ -141,8 +146,8 @@ public class GeminiService {
             Respond ONLY with a raw JSON array. No markdown. No explanation.
             Example: [{"id":"abc-123","title":"Login page broken","similarityScore":0.85}]
             """.formatted(
-                newTitle,
-                newDescription != null ? newDescription : "(no description)",
+                safeTitle,
+                safeDesc.isEmpty() ? "(no description)" : safeDesc,
                 existingList
             );
 
@@ -280,5 +285,17 @@ public class GeminiService {
         }
         log.error("All Gemini model fallbacks failed.");
         throw new RuntimeException("AI service temporarily unavailable. Please try again.", lastException);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SECURITY: Sanitize user input before it enters prompts
+    // Prevents prompt injection attacks where users embed
+    // "ignore previous instructions" style payloads.
+    // ─────────────────────────────────────────────────────────
+    private String sanitize(String input) {
+        if (input == null) return "";
+        return input
+            .replaceAll("(?i)(ignore previous|forget instructions|you are now|system:|<\\|)", "[REDACTED]")
+            .trim();
     }
 }

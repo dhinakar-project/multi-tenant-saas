@@ -6,9 +6,9 @@ services:
     container_name: mt_mysql
     environment:
       MYSQL_DATABASE: multitenant_saas
-      MYSQL_USER: saas_user
-      MYSQL_PASSWORD: Saas@123
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -26,9 +26,8 @@ services:
     environment:
       # These override / supplement env_file values
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/multitenant_saas?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: saas_user
-      SPRING_DATASOURCE_PASSWORD: Saas@123
-      APPLICATION_SECURITY_JWT_SECRET_KEY: dev-secret
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8081:8080"
     depends_on:

@@ -7,12 +7,14 @@ import com.example.saas.util.TenantHeaderUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TenantInterceptor implements HandlerInterceptor {
@@ -36,14 +38,11 @@ public class TenantInterceptor implements HandlerInterceptor {
         String tenantSlug = TenantHeaderUtil.resolveTenantSlug(request);
 
         if (tenantSlug != null) {
-            System.out.println("DEBUG_INTERCEPTOR: Resolving slug: [" + tenantSlug + "]");
-            System.out.println("DEBUG_INTERCEPTOR: Slug length: " + tenantSlug.length());
-            System.out.println("DEBUG_INTERCEPTOR: Exists in DB? " + tenantRepository.existsBySlug(tenantSlug));
+            log.debug("Resolving tenant slug: [{}]", tenantSlug);
 
             Tenant tenant = tenantRepository.findBySlug(tenantSlug)
                     .orElseThrow(() -> {
-                        System.out.println("DEBUG_INTERCEPTOR: NOT FOUND but Exists? "
-                                + tenantRepository.existsBySlug(tenantSlug));
+                        log.debug("Tenant not found for slug: [{}]", tenantSlug);
                         return new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Tenant '" + tenantSlug + "' not found");
                     });

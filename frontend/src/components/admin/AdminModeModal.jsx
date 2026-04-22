@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * AdminModeModal
@@ -19,7 +20,7 @@ function AdminModeModal({ variant = 'confirm', onConfirm, onClose }) {
         if (e.target === e.currentTarget) onClose();
     };
 
-    return (
+    return createPortal(
         <div
             onClick={handleBackdropClick}
             style={{
@@ -147,7 +148,8 @@ function AdminModeModal({ variant = 'confirm', onConfirm, onClose }) {
                     </>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

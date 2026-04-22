@@ -7,8 +7,8 @@ spring:
      name: saas-backend
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:3306/multitenant_saas?allowPublicKeyRetrieval=true&useSSL=false
-    username: saas_user
-    password: Saas@123
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -32,10 +32,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{requestId}] %-5level %logger{36} - %msg%n"
 
 # Google Gemini AI Configuration
 # Key is injected via GEMINI_API_KEY environment variable

@@ -1,4 +1,6 @@
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\AsyncConfig.java
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\RateLimitConfig.java
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\RequestIdFilter.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\SecurityConfig.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\TenantInterceptor.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\config\WebMvcConfig.java
@@ -12,7 +14,6 @@ C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\controller\TenantController.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\controller\TicketController.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\controller\UserController.java
-C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\controller\VapiConfigController.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\controller\VapiLlmController.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\core\TenantContext.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\core\TenantFilterAspect.java
@@ -20,6 +21,7 @@ C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\AiSuggestResponse.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\AuthenticationRequest.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\AuthenticationResponse.java
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\PagedResponse.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\TenantBootstrapResponse.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\TenantRegisterRequest.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\TenantResponse.java
@@ -27,6 +29,7 @@ C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\TicketCreateRequest.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\dto\UserDTO.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\exception\GlobalExceptionHandler.java
+C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\exception\ResourceNotFoundException.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\model\AuditLog.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\model\BaseEntity.java
 C:\Users\Admin\OneDrive\Desktop\multi_tenant_Saas_project\backend\src\main\java\com\example\saas\model\Comment.java

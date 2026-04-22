@@ -5,6 +5,8 @@ import api, { setClerkTokenGetter } from '../api/api';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ErrorCard from '../components/ErrorCard';
 import VoiceAssistant from '../components/VoiceAssistant';
+import SkeletonCard, { SkeletonList, SkeletonTable } from '../components/SkeletonCard';
+import AdminModeModal from '../components/admin/AdminModeModal';
 
 function Dashboard() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -14,6 +16,24 @@ function Dashboard() {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const [showAdminModal, setShowAdminModal] = useState(false);
+    const [adminModalVariant, setAdminModalVariant] = useState('confirm');
+
+    const handleAdminClick = (e) => {
+        e.preventDefault();
+        if (isAdmin) {
+            setAdminModalVariant('confirm');
+        } else {
+            setAdminModalVariant('restricted');
+        }
+        setShowAdminModal(true);
+    };
+
+    const handleAdminConfirm = () => {
+        setShowAdminModal(false);
+        navigate('/admin');
+    };
 
     // Inject Clerk token getter into API interceptor
     useEffect(() => {
@@ -45,8 +65,8 @@ function Dashboard() {
     // States
     if (!isLoaded) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="w-10 h-10 border-[3px] border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="p-8 max-w-4xl mx-auto mt-10">
+                <SkeletonList count={3} lines={4} />
             </div>
         );
     }
@@ -82,8 +102,8 @@ function Dashboard() {
 
     if (!tenantSlug) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="w-10 h-10 border-[3px] border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="p-8 max-w-4xl mx-auto mt-10">
+                <SkeletonList count={3} lines={4} />
             </div>
         );
     }
@@ -173,7 +193,7 @@ function Dashboard() {
 
                                 {isAdmin && (
                                     <button
-                                        onClick={() => navigate('/admin')}
+                                        onClick={handleAdminClick}
                                         style={{
                                             padding: '11px 28px', borderRadius: 10,
                                             border: '1px solid rgba(255,255,255,0.15)',
@@ -474,19 +494,13 @@ function Dashboard() {
                             <tbody>
                                 
                                 {loading && !error && (
-                                    <>
-                                        {[1, 2, 3, 4, 5].map(i => (
-                                            <tr key={i} className="border-b border-white/[0.04]">
-                                                <td className="py-5 px-6"><div className="w-4 h-4 skeleton mx-auto"></div></td>
-                                                <td className="py-5 px-6"><div className="w-48 h-4 skeleton"></div></td>
-                                                <td className="py-5 px-6"><div className="w-20 h-5 skeleton rounded-full"></div></td>
-                                                <td className="py-5 px-6"><div className="w-16 h-5 skeleton rounded-full"></div></td>
-                                                <td className="py-5 px-6"><div className="w-24 h-5 skeleton rounded-full"></div></td>
-                                                <td className="py-5 px-6"><div className="w-24 h-4 skeleton"></div></td>
-                                                <td className="py-5 px-6 text-right"><div className="w-12 h-4 skeleton ml-auto"></div></td>
-                                            </tr>
-                                        ))}
-                                    </>
+                                    <tr>
+                                        <td colSpan="7" className="p-0 border-b border-white/[0.04]">
+                                            <div className="p-4">
+                                                <SkeletonTable rows={5} />
+                                            </div>
+                                        </td>
+                                    </tr>
                                 )}
 
                                 {!loading && !error && tickets.length === 0 && (
@@ -684,6 +698,13 @@ function Dashboard() {
                 </div>
             </footer>
 
+            {showAdminModal && (
+                <AdminModeModal
+                    variant={adminModalVariant}
+                    onConfirm={handleAdminConfirm}
+                    onClose={() => setShowAdminModal(false)}
+                />
+            )}
         </div>
     );
 }

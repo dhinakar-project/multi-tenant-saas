@@ -1,8 +1,9 @@
-
+import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useTenant } from '../context/TenantContext';
 import api, { setClerkTokenGetter } from '../api/api';
 import ErrorCard from '../components/ErrorCard';
+import { SkeletonList } from '../components/SkeletonCard';
 
 function Projects() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -132,8 +133,8 @@ function Projects() {
 
             {/* Project List */}
             {loading ? (
-                <div className="flex justify-center p-12">
-                    <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                <div className="max-w-4xl mx-auto p-4 mt-8">
+                    <SkeletonList count={3} lines={3} />
                 </div>
             ) : error ? (
                 <ErrorCard title="Failed to load projects" message={error} onRetry={fetchProjects} />

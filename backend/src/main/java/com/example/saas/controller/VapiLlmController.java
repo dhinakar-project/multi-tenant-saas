@@ -65,8 +65,8 @@ public class VapiLlmController {
                 }
             }
 
-            log.error("Vapi LLM request payload: {}", body);
-            log.error("Vapi LLM parsed: userMessage='{}', messages={}", userMessage, messages.size());
+            log.debug("Vapi LLM request payload: {}", body);
+            log.debug("Vapi LLM parsed: userMessage='{}', messages={}", userMessage, messages.size());
 
             // ── 3. Process through conversation service ────────────────────
             String assistantReply = vapiConversationService.processMessage(userMessage, messages);

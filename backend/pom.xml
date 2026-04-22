@@ -109,6 +109,20 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Bucket4j: Per-user rate limiting for AI endpoints -->
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>8.7.0</version>
+        </dependency>
+
+        <!-- H2: In-memory DB for integration tests (test scope only) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Gemini AI: we call the REST API directly via RestTemplate (already on classpath).
              No extra dep needed — jackson-databind is provided by spring-boot-starter-web. -->
         <!-- Async HTTP support for non-blocking Gemini calls -->
