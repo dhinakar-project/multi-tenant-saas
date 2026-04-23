@@ -7,6 +7,7 @@ import AdminSidebar from '../components/admin/AdminSidebar';
 import StatCard from '../components/admin/StatCard';
 import AuditTimeline from '../components/admin/AuditTimeline';
 import RoleBadge from '../components/admin/RoleBadge';
+import AnalyticsChart from '../components/admin/AnalyticsChart';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function SectionHeading({ children }) {
@@ -263,6 +264,47 @@ ${org} Team`;
     );
 }
 
+function AnalyticsPanel({ tickets }) {
+    const priorityData = ['Low', 'Medium', 'High', 'Urgent', 'Critical'].map(p => ({
+        label: p,
+        value: tickets.filter(t => t.priority === p).length,
+    }));
+    const statusData = ['Open', 'InProgress', 'Resolved', 'Closed'].map(s => ({
+        label: s === 'InProgress' ? 'In Prog.' : s,
+        value: tickets.filter(t => t.status === s).length,
+    }));
+    const aiData = [
+        { label: 'AI Done', value: tickets.filter(t => t.aiStatus === 'DONE').length },
+        { label: 'AI Pending', value: tickets.filter(t => t.aiStatus === 'PENDING' || !t.aiStatus).length },
+        { label: 'AI Failed', value: tickets.filter(t => t.aiStatus === 'FAILED').length },
+    ];
+
+    return (
+        <div style={{ animation: 'fadeInUp 240ms ease both' }}>
+            <SectionHeading>📊 Analytics Dashboard</SectionHeading>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+                <div style={{ background: 'rgba(15,23,42,0.6)', borderRadius: 14, border: '1px solid rgba(139,92,246,0.15)', padding: '20px 20px 12px' }}>
+                    <div style={{ color: '#a78bfa', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Tickets by Priority</div>
+                    <AnalyticsChart data={priorityData} label="Priority Distribution" color="#7c3aed" />
+                </div>
+                <div style={{ background: 'rgba(15,23,42,0.6)', borderRadius: 14, border: '1px solid rgba(59,130,246,0.15)', padding: '20px 20px 12px' }}>
+                    <div style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Tickets by Status</div>
+                    <AnalyticsChart data={statusData} label="Status Distribution" color="#3b82f6" />
+                </div>
+            </div>
+            <div style={{ background: 'rgba(15,23,42,0.6)', borderRadius: 14, border: '1px solid rgba(34,197,94,0.15)', padding: '20px 20px 12px', maxWidth: 480 }}>
+                <div style={{ color: '#4ade80', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>AI Categorization Status</div>
+                <AnalyticsChart data={aiData} label="AI Processing" color="#22c55e" />
+            </div>
+            {tickets.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#334155', fontSize: 13 }}>
+                    No ticket data available yet. Create some tickets to see analytics.
+                </div>
+            )}
+        </div>
+    );
+}
+
 function AuditPanel({ logs }) {
     return (
         <div style={{ animation: 'fadeInUp 240ms ease both' }}>
@@ -321,6 +363,7 @@ function Admin() {
     const [activeTab, setActiveTab] = useState('overview');
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
+    const [tickets, setTickets] = useState([]);
     const [inviteRequest, setInviteRequest] = useState({ email: '', role: 'MEMBER' });
     const [generatedInviteLink, setGeneratedInviteLink] = useState(null);
 
@@ -330,6 +373,7 @@ function Admin() {
         if (isAdmin) {
             fetchUsers();
             fetchLogs();
+            fetchTickets();
         }
     }, [isAdmin]);
 
@@ -359,6 +403,12 @@ function Admin() {
     const fetchLogs = async () => {
         try { const r = await api.get('/audit-logs'); setLogs(r.data); } catch (_) { }
     };
+    const fetchTickets = async () => {
+        try {
+            const r = await api.get('/tickets?size=200');
+            setTickets(r.data.content || r.data || []);
+        } catch (_) { }
+    };
     const handleGenerateInvite = async (e) => {
         e.preventDefault();
         try {
@@ -385,6 +435,7 @@ function Admin() {
                     userRole={userRole}
                 />
             );
+            case 'analytics': return <AnalyticsPanel tickets={tickets} />;
             case 'audit': return <AuditPanel logs={logs} />;
             case 'settings': return <SettingsPanel tenantName={tenantName} tenantSlug={tenantSlug} />;
             default: return null;

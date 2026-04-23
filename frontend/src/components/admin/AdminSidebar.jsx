@@ -4,6 +4,7 @@ const NAV_ITEMS = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'users', label: 'Users', icon: '👥' },
     { id: 'invites', label: 'Invites', icon: '📨' },
+    { id: 'analytics', label: 'Analytics', icon: '📈' },
     { id: 'audit', label: 'Audit Logs', icon: '🧾' },
     { id: 'settings', label: 'Tenant Settings', icon: '⚙️' },
 ];

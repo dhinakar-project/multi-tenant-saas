@@ -7,18 +7,33 @@ import ErrorCard from '../components/ErrorCard';
 import VoiceAssistant from '../components/VoiceAssistant';
 import SkeletonCard, { SkeletonList, SkeletonTable } from '../components/SkeletonCard';
 import AdminModeModal from '../components/admin/AdminModeModal';
+import { useTicketStore } from '../store/useTicketStore';
+import { useTicketSocket } from '../hooks/useTicketSocket';
 
 function Dashboard() {
     const { isLoaded, isSignedIn, getToken } = useAuth();
-    const { tenantSlug, tenantName, userRole, isAdmin, isBootstrapping, bootstrapError } = useTenant();
+    const { tenantSlug, tenantName, tenantId, userRole, isAdmin, isBootstrapping, bootstrapError } = useTenant();
     const location = useLocation();
     const navigate = useNavigate();
-    const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [adminModalVariant, setAdminModalVariant] = useState('confirm');
+
+    // Zustand store — source of truth for tickets
+    const { tickets, setTickets, setLoading: setStoreLoading, filters, setFilter } = useTicketStore();
+
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [viewMode, setViewMode] = useState('table');
+
+    const filteredTickets = tickets
+        .filter(t => statusFilter === 'all' || t.status === statusFilter)
+        .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()));
+
+    // WebSocket real-time updates (safe no-op if backend doesn't have WS yet)
+    useTicketSocket(tenantId);
 
     const handleAdminClick = (e) => {
         e.preventDefault();
@@ -53,7 +68,8 @@ function Dashboard() {
         setError(null);
         try {
             const res = await api.get('/tickets');
-            setTickets(res.data.content || res.data || []);
+            const data = res.data.content || res.data || [];
+            setTickets(data);
         } catch (e) {
             console.error('Failed to fetch tickets:', e);
             setError(e.response?.data?.message || e.message || 'Failed to load tickets');
@@ -128,237 +144,268 @@ function Dashboard() {
     };
 
     return (
-        <div className="animate-fade-up">
+        <div className="page-enter">
 
-            {/* ──────────────────────────────────────────────────────────── */}
-            {/* SECTION 1: HERO WELCOME BANNER — Horizontal Split Layout      */}
-            {/* ──────────────────────────────────────────────────────────── */}
-            <section className="mb-16">
-                <div className="glass-card relative overflow-hidden" style={{
-                    background: 'linear-gradient(135deg, rgba(10,10,30,0.95) 0%, rgba(20,15,50,0.95) 100%)',
-                    border: '1px solid rgba(99,102,241,0.15)',
-                    borderRadius: 20,
-                    padding: '48px 56px',
+            {/* ── Hero Banner (compact) ── */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(99,102,241,0.08) 50%, rgba(16,185,129,0.06) 100%)',
+              border: '1px solid rgba(139,92,246,0.2)',
+              borderRadius: 20,
+              padding: '28px 36px',
+              marginBottom: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Background grid texture */}
+              <div style={{
+                position: 'absolute', inset: 0, opacity: 0.03,
+                backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+                backgroundSize: '32px 32px',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Left: text */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* Pill badge */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                  borderRadius: 20, padding: '4px 12px', marginBottom: 14,
                 }}>
-                    {/* Background ambient glows */}
-                    <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }}></div>
-                    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)', transform: 'translate(20%, 30%)' }}></div>
-
-                    {/* Two-column grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '48px', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-
-                        {/* ── LEFT: Text + CTAs ── */}
-                        <div>
-                            {/* Badge */}
-                            <div style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '4px 14px', borderRadius: 999,
-                                background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)',
-                                color: '#a5b4fc', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em',
-                                marginBottom: 20,
-                            }}>
-                                <span style={{ color: '#818cf8' }}>✦</span> AI-Powered Ticket Management
-                            </div>
-
-                            {/* Heading */}
-                            <h1 style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', fontWeight: 800, lineHeight: 1.15, color: '#fff', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-                                Welcome back,{' '}
-                                <span style={{ background: 'linear-gradient(90deg, #818cf8, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                                    {tenantName || tenantSlug}
-                                </span>!
-                            </h1>
-
-                            {/* Subtitle */}
-                            <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.65, margin: '0 0 32px', maxWidth: 480 }}>
-                                Your workspace is running smoothly. Tracking {tickets.length} tickets across your organization with native Gemini AI integration.
-                            </p>
-
-                            {/* CTA Buttons */}
-                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                                <button
-                                    onClick={() => navigate('/tickets/new')}
-                                    style={{
-                                        padding: '11px 28px', borderRadius: 10, border: 'none',
-                                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                                        color: '#fff', fontWeight: 700, fontSize: 14,
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                                        boxShadow: '0 4px 20px rgba(99,102,241,0.45)',
-                                        transition: 'transform 200ms, box-shadow 200ms',
-                                    }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(99,102,241,0.6)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.45)'; }}
-                                >
-                                    Create Ticket <span style={{ opacity: 0.8 }}>→</span>
-                                </button>
-
-                                {isAdmin && (
-                                    <button
-                                        onClick={handleAdminClick}
-                                        style={{
-                                            padding: '11px 28px', borderRadius: 10,
-                                            border: '1px solid rgba(255,255,255,0.15)',
-                                            background: 'rgba(255,255,255,0.06)', color: '#cbd5e1',
-                                            fontWeight: 600, fontSize: 14, cursor: 'pointer',
-                                            transition: 'all 200ms',
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#cbd5e1'; }}
-                                    >
-                                        View Admin Console
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ── RIGHT: Robot Avatar + Voice Button + Status ── */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, minWidth: 220 }}>
-                            {/* AI Voice Assistant Label */}
-                            <div style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '4px 12px', borderRadius: 999, marginBottom: 14,
-                                background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
-                                color: '#a5b4fc', fontSize: 11, fontWeight: 600,
-                            }}>
-                                <span style={{ fontSize: 10 }}>✦</span> AI Voice Assistant
-                            </div>
-
-                            {/* Glowing Robot Orb */}
-                            <div
-                                style={{ position: 'relative', width: 200, height: 200, cursor: 'pointer', flexShrink: 0 }}
-                                onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
-                            >
-                                {/* Outer glow ring */}
-                                <div style={{
-                                    position: 'absolute', inset: -8,
-                                    borderRadius: '50%',
-                                    background: 'conic-gradient(from 0deg, rgba(99,102,241,0.6), rgba(139,92,246,0.15), rgba(59,130,246,0.5), rgba(99,102,241,0.6))',
-                                    animation: 'spin 6s linear infinite',
-                                    filter: 'blur(2px)',
-                                }}></div>
-                                {/* Dark ring separator */}
-                                <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', background: 'rgba(10,10,30,0.95)' }}></div>
-                                {/* Robot container */}
-                                <div style={{
-                                    position: 'relative', width: '100%', height: '100%',
-                                    borderRadius: '50%',
-                                    background: 'radial-gradient(circle at 35% 35%, rgba(30,27,75,1) 0%, rgba(10,10,30,1) 100%)',
-                                    border: '1px solid rgba(99,102,241,0.25)',
-                                    boxShadow: '0 0 60px rgba(99,102,241,0.4), inset 0 0 40px rgba(99,102,241,0.08)',
-                                    overflow: 'hidden',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    animation: 'robotHover 4s ease-in-out infinite',
-                                }}>
-                                    {/* Inner gradient overlay */}
-                                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 60% 40%, rgba(99,102,241,0.15) 0%, transparent 60%)' }}></div>
-                                    <img
-                                        src="/ai_robot_avatar.png"
-                                        alt="AI Agent"
-                                        style={{ width: '88%', height: '88%', objectFit: 'contain', position: 'relative', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.7))' }}
-                                    />
-                                    {/* Glowing dots on ring */}
-                                    <div style={{ position: 'absolute', top: 12, right: 18, width: 8, height: 8, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 8px #60a5fa' }}></div>
-                                    <div style={{ position: 'absolute', bottom: 20, left: 14, width: 6, height: 6, borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 6px #818cf8' }}></div>
-                                </div>
-                            </div>
-
-                            {/* Talk to AI Button */}
-                            <button
-                                onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
-                                style={{
-                                    marginTop: 18, padding: '10px 22px', borderRadius: 999,
-                                    border: '1px solid rgba(99,102,241,0.35)',
-                                    background: 'rgba(15,15,40,0.8)', color: '#c4b5fd',
-                                    fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    boxShadow: '0 0 20px rgba(99,102,241,0.15)',
-                                    transition: 'all 200ms', backdropFilter: 'blur(8px)',
-                                    width: '100%', justifyContent: 'center',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(99,102,241,0.3)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(15,15,40,0.8)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(99,102,241,0.15)'; }}
-                            >
-                                <svg style={{ width: 15, height: 15, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                                </svg>
-                                Talk to AI Assistant
-                            </button>
-
-                            {/* Status pills — vertical stack under avatar */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14, alignSelf: 'stretch' }}>
-                                {[
-                                    { dot: '#4ade80', text: 'AI Categorization Active' },
-                                    { dot: '#a78bfa', text: 'Voice Powered by Gemini' },
-                                    { dot: '#60a5fa', text: 'Real-time Data' },
-                                ].map(({ dot, text }) => (
-                                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: dot, boxShadow: `0 0 6px ${dot}`, flexShrink: 0 }}></div>
-                                        <span style={{ color: '#94a3b8', fontSize: 12, fontWeight: 500 }}>{text}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
+                  <span style={{ color: '#a78bfa', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em' }}>AI-Powered Ticket Management</span>
                 </div>
-            </section>
 
-            {/* ──────────────────────────────────────────────────────────── */}
-            {/* SECTION 2: METRICS ROW (4 stat cards)                        */}
-            {/* ──────────────────────────────────────────────────────────── */}
-            <section className="mb-20">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    
-                    <div className="glass-card p-6 animate-fade-up cursor-default hover:bg-slate-800/40 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <svg className="w-16 h-16 text-violet-400" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 mb-4 border border-violet-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        </div>
-                        <p className="text-4xl font-extrabold text-white mb-1 tracking-tight">{tickets.length}</p>
-                        <p className="text-slate-400 text-sm font-medium mb-3">Total Tickets</p>
-                        <div className="badge badge-ai inline-flex gap-1 items-center">
-                            <span>+{tickets.length}</span> <span className="opacity-80 font-normal">this session</span>
-                        </div>
-                    </div>
+                <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+                  Welcome back, <span style={{
+                    background: 'linear-gradient(135deg, #a78bfa, #818cf8, #38bdf8)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                  }}>{tenantName || 'your workspace'}</span>
+                </h1>
+                <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: 15, lineHeight: 1.5, maxWidth: 420 }}>
+                  {tickets.length} tickets tracked · AI categorization active · Real-time sync enabled
+                </p>
 
-                    <div className="glass-card p-6 animate-fade-up cursor-default hover:bg-slate-800/40 relative overflow-hidden group" style={{ animationDelay: '100ms' }}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <svg className="w-16 h-16 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4 border border-emerald-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <p className="text-4xl font-extrabold text-white mb-1 tracking-tight">{tickets.filter(t => t.status === 'Open').length}</p>
-                        <p className="text-slate-400 text-sm font-medium mb-3">Open Tickets</p>
-                        <div className="badge badge-open">Requires action</div>
-                    </div>
-
-                    <div className="glass-card p-6 animate-fade-up cursor-default hover:bg-slate-800/40 relative overflow-hidden group" style={{ animationDelay: '200ms' }}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <svg className="w-16 h-16 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-4 border border-blue-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-                            <span className="text-2xl">✨</span>
-                        </div>
-                        <p className="text-4xl font-extrabold text-white mb-1 tracking-tight">{tickets.filter(t => t.aiCategory).length}</p>
-                        <p className="text-slate-400 text-sm font-medium mb-3">AI Categorized</p>
-                        <div className="badge badge-ai bg-blue-500/20 text-blue-300 border-blue-500/30">{aiSuccessRate}% success rate</div>
-                    </div>
-
-                    <div className="glass-card p-6 animate-fade-up cursor-default hover:bg-slate-800/40 relative overflow-hidden group" style={{ animationDelay: '300ms' }}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <svg className="w-16 h-16 text-orange-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-4 border border-orange-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        </div>
-                        <p className="text-4xl font-extrabold text-white mb-1 tracking-tight">{tickets.filter(t => ['High', 'Urgent', 'Critical'].includes(t.priority)).length}</p>
-                        <p className="text-slate-400 text-sm font-medium mb-3">High Priority</p>
-                        <div className="badge badge-urgent">Needs attention</div>
-                    </div>
-
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    onClick={() => navigate('/tickets/new')}
+                    style={{
+                      background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                      color: 'white', border: 'none', borderRadius: 12,
+                      padding: '11px 22px', fontWeight: 700, fontSize: 14,
+                      cursor: 'pointer', boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
+                      transition: 'transform 120ms, box-shadow 120ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(124,58,237,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,58,237,0.4)'; }}
+                  >
+                    + Create Ticket
+                  </button>
+                  <button
+                    onClick={() => navigate('/admin')}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                      padding: '11px 22px', fontWeight: 600, fontSize: 14,
+                      cursor: 'pointer', transition: 'all 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#f1f5f9'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                  >
+                    Admin Console →
+                  </button>
                 </div>
-            </section>
+              </div>
+
+              {/* Right: AI Agent & Status */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, zIndex: 1, minWidth: 260 }}>
+                
+                {/* AI Agent Avatar */}
+                <div
+                    style={{ position: 'relative', width: 180, height: 180, cursor: 'pointer', flexShrink: 0, marginTop: 12 }}
+                    onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
+                >
+                    <div style={{ position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#bae6fd', backdropFilter: 'blur(4px)', zIndex: 10, whiteSpace: 'nowrap' }}>
+                      ✦ AI Voice Assistant
+                    </div>
+                    {/* Cyan glow background */}
+                    <div style={{ position: 'absolute', inset: -10, borderRadius: 40, background: 'rgba(56,189,248,0.15)', filter: 'blur(20px)', animation: 'pulse-ring 3s infinite' }}></div>
+                    <img
+                        src="/ai_robot_avatar.png"
+                        alt="AI Assistant"
+                        style={{ 
+                          position: 'absolute', inset: 0, width: '100%', height: '100%', 
+                          objectFit: 'cover', 
+                          borderRadius: 36, 
+                          border: '2px solid rgba(56,189,248,0.5)', 
+                          padding: '4px', 
+                          background: 'linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,27,75,0.9))', 
+                          boxShadow: '0 0 25px rgba(56,189,248,0.3), inset 0 0 20px rgba(56,189,248,0.1)', 
+                          transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 400ms' 
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.06)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(56,189,248,0.6), inset 0 0 20px rgba(56,189,248,0.2)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 25px rgba(56,189,248,0.3), inset 0 0 20px rgba(56,189,248,0.1)'; }}
+                    />
+                </div>
+
+                <button 
+                  onClick={() => document.querySelector('[title="Chat with AI"]')?.click()}
+                  style={{
+                    background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '8px 24px', fontSize: 13, fontWeight: 600, color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 200ms', width: '100%', justifyContent: 'center'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.15)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(15,23,42,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#e2e8f0'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                  Talk to AI Assistant
+                </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', paddingLeft: 8 }}>
+                  {[
+                    { label: 'AI Categorization Active', color: '#22c55e' },
+                    { label: 'Voice Powered by Gemini', color: '#a78bfa' },
+                    { label: 'Real-time Data', color: '#38bdf8' },
+                  ].map(({ label, color }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+                        <span style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 500, letterSpacing: '0.02em' }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Stat Cards ── */}
+            {(() => {
+              const openCount = tickets.filter(t => t.status === 'Open').length;
+              const inProgressCount = tickets.filter(t => t.status === 'In Progress').length;
+              const aiCategorized = tickets.filter(t => t.aiCategory).length;
+              const aiPct = tickets.length > 0 ? Math.round(aiCategorized / tickets.length * 100) : 0;
+
+              const stats = [
+                {
+                  label: 'Total Tickets',
+                  value: tickets.length,
+                  sub: 'all time',
+                  accent: '#818cf8',
+                  glow: 'rgba(129,140,248,0.15)',
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Open',
+                  value: openCount,
+                  sub: openCount > 0 ? 'need attention' : 'all clear',
+                  accent: '#f87171',
+                  glow: 'rgba(248,113,113,0.15)',
+                  pulse: openCount > 0,
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'In Progress',
+                  value: inProgressCount,
+                  sub: 'being worked on',
+                  accent: '#fbbf24',
+                  glow: 'rgba(251,191,36,0.15)',
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'AI Categorized',
+                  value: `${aiPct}%`,
+                  sub: `${aiCategorized} of ${tickets.length} tickets`,
+                  accent: '#a78bfa',
+                  glow: 'rgba(167,139,250,0.15)',
+                  isPercent: true,
+                  pct: aiPct,
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6a6 6 0 0 1 6 6"/><circle cx="12" cy="12" r="2"/>
+                    </svg>
+                  ),
+                },
+              ];
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+                  {stats.map((s, i) => (
+                    <div
+                      key={s.label}
+                      className="glass-card"
+                      style={{
+                        padding: '20px 22px',
+                        borderRadius: 16,
+                        background: `linear-gradient(135deg, ${s.glow} 0%, rgba(255,255,255,0.02) 100%)`,
+                        border: `1px solid ${s.accent}22`,
+                        animation: `fadeInUp 0.4s ease ${i * 0.08}s both`,
+                        position: 'relative',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Top glow accent line */}
+                      <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                        background: `linear-gradient(90deg, transparent, ${s.accent}, transparent)`,
+                      }} />
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</span>
+                        <div style={{
+                          width: 34, height: 34, borderRadius: 10,
+                          background: `${s.accent}18`,
+                          border: `1px solid ${s.accent}30`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          position: 'relative',
+                        }}>
+                          {s.icon}
+                          {s.pulse && (
+                            <div style={{
+                              position: 'absolute', top: -3, right: -3,
+                              width: 10, height: 10, borderRadius: '50%',
+                              background: '#f87171',
+                              boxShadow: '0 0 8px #f87171',
+                              animation: 'pulse-ring 2s ease infinite',
+                            }} />
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: 34, fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 6 }}>
+                        {s.value}
+                      </div>
+
+                      {s.isPercent ? (
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', width: `${s.pct}%`,
+                              background: `linear-gradient(90deg, ${s.accent}, ${s.accent}aa)`,
+                              borderRadius: 2,
+                              transition: 'width 1s ease',
+                            }} />
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>{s.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* ──────────────────────────────────────────────────────────── */}
             {/* SECTION 3: FEATURE HIGHLIGHTS ROW                            */}
@@ -456,124 +503,116 @@ function Dashboard() {
             {/* ──────────────────────────────────────────────────────────── */}
             <section className="mb-24" id="tickets-table">
                 
-                <div className="flex items-end justify-between mb-6">
-                    <div>
-                        <h2 className="text-white text-2xl font-bold tracking-tight mb-1">Your Tickets</h2>
-                        <span className="text-slate-400 text-sm flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
-                            Live data for {tenantName || tenantSlug}
-                        </span>
-                    </div>
-                    <button onClick={() => navigate('/tickets/new')} className="btn-primary space-x-1 shadow-[0_4px_24px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_32px_rgba(124,58,237,0.6)]">
-                        <span className="text-lg font-normal leading-none mb-[2px]">+</span>
-                        <span>New Ticket</span>
-                    </button>
+                {/* ── Toolbar ── */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input
+                      placeholder="Search tickets... (⌘K)"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: '#f1f5f9', padding: '10px 14px 10px 38px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'}
+                      onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                    />
+                  </div>
+
+                  {['All Status', 'Open', 'In Progress', 'Done'].map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => setStatusFilter(opt === 'All Status' ? 'all' : opt)}
+                      style={{
+                        padding: '9px 16px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 150ms',
+                        background: statusFilter === (opt === 'All Status' ? 'all' : opt) ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: statusFilter === (opt === 'All Status' ? 'all' : opt) ? '#a78bfa' : '#64748b',
+                        border: statusFilter === (opt === 'All Status' ? 'all' : opt) ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.07)',
+                      }}
+                    >{opt}</button>
+                  ))}
+
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                    {[['table','⊞'], ['kanban','☲']].map(([v, icon]) => (
+                      <button key={v} onClick={() => setViewMode(v)}
+                        style={{ padding: '9px 14px', border: 'none', cursor: 'pointer', fontSize: 15, transition: 'all 150ms',
+                          background: viewMode === v ? 'rgba(139,92,246,0.2)' : 'transparent',
+                          color: viewMode === v ? '#a78bfa' : '#64748b' }}
+                      >{icon}</button>
+                    ))}
+                  </div>
                 </div>
 
-                {error && (
-                    <div className="glass-card p-6 border-red-500/30 bg-red-900/10 mb-6 flex flex-col items-center">
-                        <p className="text-red-400 font-medium mb-3">Error: {error}</p>
-                        <button onClick={fetchTickets} className="btn-secondary text-xs">Retry Fetch</button>
-                    </div>
-                )}
+                {/* ── Table ── */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(15,23,42,0.6)' }}>
+                        {['Ticket', 'Priority', 'Status', 'AI Category', 'Created'].map(h => (
+                          <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#334155', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTickets.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                            <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>📭</div>
+                            <div style={{ color: '#475569', fontSize: 15, fontWeight: 500 }}>No tickets found</div>
+                            <div style={{ color: '#334155', fontSize: 13, marginTop: 4 }}>Create your first ticket to get started</div>
+                          </td>
+                        </tr>
+                      ) : filteredTickets.map((ticket, i) => {
+                        const priorityStyle = {
+                          High:   { bg: 'rgba(239,68,68,0.12)',  color: '#f87171', border: 'rgba(239,68,68,0.25)' },
+                          Medium: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: 'rgba(251,191,36,0.25)' },
+                          Low:    { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: 'rgba(59,130,246,0.25)' },
+                        }[ticket.priority] || { bg: 'rgba(100,116,139,0.1)', color: '#94a3b8', border: 'rgba(100,116,139,0.2)' };
 
-                <div className="glass-card overflow-hidden shadow-2xl">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-white/[0.03] border-b border-white/[0.08]">
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] w-12 text-center">#</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Title</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Status</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Priority</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">AI Category</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Created</th>
-                                    <th className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                
-                                {loading && !error && (
-                                    <tr>
-                                        <td colSpan="7" className="p-0 border-b border-white/[0.04]">
-                                            <div className="p-4">
-                                                <SkeletonTable rows={5} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
+                        const statusStyle = {
+                          'Open':        { bg: 'rgba(239,68,68,0.1)',   color: '#f87171' },
+                          'In Progress': { bg: 'rgba(251,191,36,0.1)',  color: '#fbbf24' },
+                          'DONE':        { bg: 'rgba(34,197,94,0.1)',   color: '#4ade80' },
+                          'TODO':        { bg: 'rgba(99,102,241,0.1)',  color: '#818cf8' },
+                        }[ticket.status] || { bg: 'rgba(100,116,139,0.1)', color: '#94a3b8' };
 
-                                {!loading && !error && tickets.length === 0 && (
-                                    <tr>
-                                        <td colSpan="7">
-                                            <div className="py-24 flex flex-col items-center justify-center relative overflow-hidden">
-                                                <span className="text-7xl opacity-20 mb-6 drop-shadow-2xl">🎫</span>
-                                                <h3 className="text-white text-2xl font-bold mb-2 tracking-tight">No tickets yet</h3>
-                                                <p className="text-slate-400 max-w-sm text-center mb-8">
-                                                    Your workspace is empty! Create your first ticket to see the AI categorization in action.
-                                                </p>
-                                                <button onClick={() => navigate('/tickets/new')} className="btn-primary w-48 shadow-[0_0_24px_rgba(124,58,237,0.3)]">
-                                                    Create Your First Ticket
-                                                </button>
-                                                
-                                                <div className="absolute inset-0 bg-gradient-to-t from-violet-600/5 to-transparent pointer-events-none"></div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-
-                                {!loading && !error && tickets.map((t, idx) => (
-                                    <tr key={t.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors group">
-                                        
-                                        <td className="py-4 px-6 text-xs text-slate-600 font-mono text-center">
-                                            {idx + 1}
-                                        </td>
-
-                                        <td className="py-4 px-6">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-slate-200 font-medium text-[14px] group-hover:text-white transition-colors">{t.title}</span>
-                                                {t.aiCategory && (
-                                                    <span className="badge badge-ai !text-[9px] !px-1.5 !py-0 border-dashed tracking-wide uppercase opacity-0 group-hover:opacity-100 transition-opacity">AI Tagged</span>
-                                                )}
-                                            </div>
-                                        </td>
-
-                                        <td className="py-4 px-6">
-                                            <span className={`badge ${statusColors[t.status] || 'badge-low'}`}>{t.status}</span>
-                                        </td>
-
-                                        <td className="py-4 px-6">
-                                            <span className={`badge ${priorityColors[t.priority] || 'badge-low'}`}>{t.priority}</span>
-                                        </td>
-
-                                        <td className="py-4 px-6">
-                                            {t.aiCategory ? (
-                                                <span className="badge badge-ai border-dashed">{t.aiCategory}</span>
-                                            ) : t.aiStatus === 'PENDING' ? (
-                                                <div className="flex items-center gap-2 text-slate-400 text-xs">
-                                                    <div className="w-3 h-3 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                                                    <span className="italic">analyzing</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-600 font-medium">—</span>
-                                            )}
-                                        </td>
-
-                                        <td className="py-4 px-6 text-slate-400 text-[13px] font-medium tracking-wide">
-                                            {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </td>
-
-                                        <td className="py-4 px-6 text-right">
-                                            <Link to={`/tickets/${t.id}`} className="text-violet-400 hover:text-violet-300 font-semibold text-[13px] tracking-wide inline-flex items-center gap-1 opacity-80 hover:opacity-100 transition-all group-hover:translate-x-1 duration-300">
-                                                View <span className="text-[10px] mt-[1px]">→</span>
-                                            </Link>
-                                        </td>
-
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                        return (
+                          <tr
+                            key={ticket.id}
+                            onClick={() => navigate(`/tickets/${ticket.id}`)}
+                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', transition: 'background 120ms', animation: `fadeInUp 0.3s ease ${i * 0.05}s both` }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.05)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 14, marginBottom: 2 }}>{ticket.title}</div>
+                              <div style={{ color: '#475569', fontSize: 12 }}>#{ticket.id?.toString().slice(-6)}</div>
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: priorityStyle.bg, color: priorityStyle.color, border: `1px solid ${priorityStyle.border}` }}>
+                                {ticket.priority || 'None'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: statusStyle.bg, color: statusStyle.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                {ticket.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              {ticket.aiCategory ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 20, padding: '3px 10px', fontWeight: 600 }}>
+                                  ✦ {ticket.aiCategory}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#334155', fontSize: 12 }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 16px', color: '#475569', fontSize: 13 }}>
+                              {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
             </section>
 

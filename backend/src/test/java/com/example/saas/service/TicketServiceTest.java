@@ -153,14 +153,17 @@ class TicketServiceTest {
         when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(existing));
         when(ticketRepository.save(any())).thenReturn(existing);
 
-        ticketService.updateTicketStatus(ticketId, "In Progress");
+        ticketService.updateTicketStatus(ticketId, "InProgress");
 
+        // Verify audit log was written with status transition details
+        ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
         verify(auditLogService).log(
             eq("TICKET_STATUS_CHANGED"),
             eq("TICKET"),
             eq(ticketId),
-            contains("Open → In Progress")
+            summaryCaptor.capture()
         );
+        assertThat(summaryCaptor.getValue()).contains("Open").contains("InProgress");
     }
 
     @Test
@@ -170,5 +173,27 @@ class TicketServiceTest {
 
         assertThatThrownBy(() -> ticketService.updateTicketStatus(ticketId, "Closed"))
             .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("createTicket() should set createdBy from security context")
+    void createTicket_setsCreatedByFromSecurityContext() {
+        TicketCreateRequest req = new TicketCreateRequest();
+        req.setTitle("Security context test");
+        req.setPriority("Low");
+
+        ArgumentCaptor<Ticket> ticketCaptor = ArgumentCaptor.forClass(Ticket.class);
+        Ticket saved = new Ticket();
+        saved.setId(UUID.randomUUID());
+        saved.setStatus("Open");
+        saved.setTitle(req.getTitle());
+        when(ticketRepository.save(ticketCaptor.capture())).thenReturn(saved);
+
+        ticketService.createTicket(req);
+
+        Ticket captured = ticketCaptor.getValue();
+        assertThat(captured.getStatus()).isEqualTo("Open");
+        // createdBy is a UUID — must match the mock user's ID from the security context
+        assertThat(captured.getCreatedBy()).isEqualTo(mockUser.getId());
     }
 }

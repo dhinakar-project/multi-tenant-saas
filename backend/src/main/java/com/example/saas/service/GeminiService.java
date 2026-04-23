@@ -5,12 +5,17 @@ import com.example.saas.dto.TicketCategorizationResult;
 import com.example.saas.model.Ticket;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +30,12 @@ public class GeminiService {
     @Value("${gemini.model}")
     private String model;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
+
+    private final WebClient webClient = WebClient.builder()
+        .codecs(c -> c.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
+        .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String GEMINI_BASE_URL =
@@ -229,7 +239,7 @@ public class GeminiService {
     }
 
     // ─────────────────────────────────────────────────────────
-    // PRIVATE HELPER — Single entry point for all Gemini calls
+    // PRIVATE HELPER — WebClient-based single entry point for all Gemini calls
     // ─────────────────────────────────────────────────────────
 
     private String callGemini(String prompt) {
@@ -249,26 +259,41 @@ public class GeminiService {
 
             Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
-                    Map.of("parts", List.of(
-                        Map.of("text", prompt)
-                    ))
+                    Map.of("parts", List.of(Map.of("text", prompt)))
                 ),
                 "generationConfig", Map.of(
-                    "temperature", 0.2,       // Low = more deterministic, consistent output
+                    "temperature", 0.2,
                     "maxOutputTokens", 512
                 )
             );
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
             try {
-                ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    url, HttpMethod.POST, entity, JsonNode.class
-                );
+                Timer.Sample sample = meterRegistry != null ? Timer.start(meterRegistry) : null;
 
-                JsonNode body = response.getBody();
+                String rawJson = webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> response.bodyToMono(String.class)
+                            .flatMap(body -> Mono.error(new RuntimeException("Gemini API error: " + body)))
+                    )
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .doOnError(e -> log.warn("Gemini WebClient call failed for model {}: {}", targetModel, e.getMessage()))
+                    .onErrorReturn("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{}\"}]}}]}")
+                    .block();
+
+                if (sample != null && meterRegistry != null) {
+                    sample.stop(meterRegistry.timer("gemini.call.duration", "model", targetModel));
+                }
+                if (meterRegistry != null) {
+                    meterRegistry.counter("gemini.calls.total", "model", targetModel, "status", "success").increment();
+                }
+
+                JsonNode body = objectMapper.readTree(rawJson);
                 if (body == null || !body.has("candidates")) {
                     throw new RuntimeException("Empty or invalid Gemini response");
                 }
@@ -280,6 +305,9 @@ public class GeminiService {
 
             } catch (Exception e) {
                 log.warn("Gemini API call failed for model {}: {}", targetModel, e.getMessage());
+                if (meterRegistry != null) {
+                    meterRegistry.counter("gemini.calls.total", "model", targetModel, "status", "error").increment();
+                }
                 lastException = e;
             }
         }

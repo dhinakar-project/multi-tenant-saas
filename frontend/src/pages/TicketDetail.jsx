@@ -1,346 +1,362 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import api, { setClerkTokenGetter } from '../api/api';
 import { useTenant } from '../context/TenantContext';
 import VoiceAssistant from '../components/VoiceAssistant';
 import { SkeletonList } from '../components/SkeletonCard';
+import { timeAgo } from '../utils/timeAgo';
+import { notify } from '../utils/toast';
 
-function AiInsightsCard({ ticket }) {
-    const { aiStatus, aiCategory, aiSuggestedPriority, aiConfidence, aiReasoning } = ticket;
+// ── Avatar initials circle ─────────────────────────────────────
+function Avatar({ name, size = 32 }) {
+  const initials = name
+    ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
+  const hash = name ? name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 42;
+  const colors = ['#7c3aed', '#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626'];
+  const bg = colors[hash % colors.length];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', background: bg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.38, fontWeight: 700, color: 'white', flexShrink: 0,
+    }}>
+      {initials}
+    </div>
+  );
+}
 
-    if (!aiStatus || aiStatus === 'PENDING') {
-        return (
-            <div className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-dashed border-2 border-violet-500/20 bg-violet-500/5 my-8">
-                <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 border-[3px] border-violet-400 border-t-violet-100 rounded-full animate-spin flex-shrink-0" />
-                    <h3 className="text-white font-semibold text-lg">AI Analysis in Progress</h3>
-                </div>
-                <p className="text-slate-400 text-sm">Gemini Flash is analyzing this ticket...</p>
-            </div>
-        );
-    }
-
-    if (aiStatus === 'FAILED') {
-        return (
-            <div className="glass-card p-6 border-dashed border-2 border-slate-700/50 bg-slate-800/20 my-8">
-                <span className="text-slate-500 font-medium">✦ AI Analysis Unavailable</span>
-                <p className="text-slate-600 text-sm mt-2">The Gemini AI model could not process this ticket.</p>
-            </div>
-        );
-    }
-
-    if (aiStatus === 'DONE') {
-        const confidencePct = aiConfidence != null ? Math.round(aiConfidence * 100) : null;
-        
-        const priorityColors = {
-            Critical: 'badge-critical',
-            Urgent: 'badge-urgent',
-            High: 'badge-high',
-            Medium: 'badge-medium',
-            Low: 'badge-low'
-        };
-
-        return (
-            <div className="bg-gradient-to-br from-violet-50 to-white border-2 border-violet-200 rounded-2xl p-6 my-8 shadow-sm">
-                
-                {/* Header row */}
-                <div className="flex items-start justify-between mb-6">
-                    <h3 className="text-violet-700 font-bold text-lg flex items-center gap-2">
-                        <span className="text-violet-400">✦</span> AI Analysis
-                    </h3>
-                    <span className="badge badge-ai">Powered by Gemini Flash</span>
-                </div>
-
-                {/* 3-column info grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    {/* Col 1 */}
-                    <div className="bg-white rounded-xl p-4 border border-violet-100/50 shadow-sm flex flex-col justify-center items-center text-center">
-                        <span className="text-violet-400 text-[10px] uppercase font-bold tracking-widest mb-2">Category</span>
-                        {aiCategory ? (
-                            <span className="bg-violet-100 text-violet-700 font-bold px-4 py-1.5 rounded-full text-sm">
-                                {aiCategory}
-                            </span>
-                        ) : (
-                            <span className="text-gray-400">—</span>
-                        )}
-                    </div>
-
-                    {/* Col 2 */}
-                    <div className="bg-white rounded-xl p-4 border border-violet-100/50 shadow-sm flex flex-col justify-center items-center text-center">
-                        <span className="text-violet-400 text-[10px] uppercase font-bold tracking-widest mb-2">Suggested Priority</span>
-                        {aiSuggestedPriority ? (
-                            <span className={`badge ${priorityColors[aiSuggestedPriority] || 'badge-low'} px-4 py-1.5 text-sm`}>
-                                {aiSuggestedPriority}
-                            </span>
-                        ) : (
-                            <span className="text-gray-400">—</span>
-                        )}
-                    </div>
-
-                    {/* Col 3 */}
-                    <div className="bg-white rounded-xl p-4 border border-violet-100/50 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden">
-                        <span className="text-violet-400 text-[10px] uppercase font-bold tracking-widest mb-1 relative z-10">Confidence</span>
-                        {confidencePct !== null ? (
-                            <div className="relative z-10 w-full">
-                                <span className="text-3xl font-extrabold text-violet-600 tabular-nums">
-                                    {confidencePct}%
-                                </span>
-                                <div className="w-full bg-gray-100 rounded-full h-2 mt-3 overflow-hidden">
-                                    <div 
-                                        className="bg-gradient-to-r from-violet-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out"
-                                        style={{ width: `${confidencePct}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <span className="text-gray-400 relative z-10">—</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Reasoning box */}
-                {aiReasoning && (
-                    <div className="bg-violet-50/50 rounded-xl p-5 border border-violet-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-amber-500 text-sm">💡</span>
-                            <span className="text-violet-600 font-bold text-xs uppercase tracking-wider">AI Reasoning</span>
-                        </div>
-                        <p className="text-gray-700 text-sm italic leading-relaxed pl-6 border-l-2 border-violet-200/50">
-                            {aiReasoning}
-                        </p>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    return null;
+// ── Simple markdown bold/italic renderer ──────────────────────
+function renderMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
 }
 
 function TicketDetail() {
-    const { id } = useParams();
-    const { getToken } = useAuth();
-    const navigate = useNavigate();
-    const { isAdmin } = useTenant();
-    const [ticket, setTicket] = useState(null);
-    const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState('');
+  const { id } = useParams();
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const navigate = useNavigate();
+  const { isAdmin } = useTenant();
+  const [ticket, setTicket] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [draftLoading, setDraftLoading] = useState(false);
 
-    useEffect(() => {
-        setClerkTokenGetter(getToken);
-    }, [getToken]);
+  useEffect(() => { setClerkTokenGetter(getToken); }, [getToken]);
+  useEffect(() => { fetchData(); }, [id]);
 
-    useEffect(() => {
-        fetchData();
-    }, [id]);
+  const fetchData = async () => {
+    const [ticketRes, commentsRes] = await Promise.all([
+      api.get(`/tickets/${id}`),
+      api.get(`/tickets/${id}/comments`),
+    ]);
+    setTicket(ticketRes.data);
+    setComments(commentsRes.data);
+  };
 
-    const fetchData = async () => {
-        const [ticketRes, commentsRes] = await Promise.all([
-            api.get(`/tickets/${id}`),
-            api.get(`/tickets/${id}/comments`)
-        ]);
-        setTicket(ticketRes.data);
-        setComments(commentsRes.data);
-    };
-
-    const handleStatusChange = async (newStatus) => {
-        await api.patch(`/tickets/${id}/status`, { status: newStatus });
-        fetchData();
-    };
-
-    const handleAddComment = async (e) => {
-        e.preventDefault();
-        if (!newComment.trim()) return;
-        await api.post(`/tickets/${id}/comments`, { message: newComment });
-        setNewComment('');
-        fetchData();
-    };
-
-    if (!ticket) {
-        return (
-            <div className="max-w-4xl mx-auto p-8 mt-10">
-                <SkeletonList count={3} lines={5} />
-            </div>
-        );
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await api.patch(`/tickets/${id}/status`, { status: newStatus });
+      setTicket(t => ({ ...t, status: newStatus }));
+      notify.success(`Status changed to ${newStatus}`);
+    } catch {
+      notify.error('Failed to update status');
     }
+  };
 
-    const priorityColors = {
-        Critical: 'badge-critical',
-        Urgent: 'badge-urgent',
-        High: 'badge-high',
-        Medium: 'badge-medium',
-        Low: 'badge-low'
-    };
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    try {
+      await api.post(`/tickets/${id}/comments`, { message: newComment });
+      setNewComment('');
+      fetchData();
+      notify.success('Comment posted');
+    } catch {
+      notify.error('Failed to post comment');
+    }
+  };
 
-    const statusColors = {
-        Open: 'badge-open',
-        InProgress: 'badge-inprogress',
-        Resolved: 'badge-resolved',
-        Closed: 'badge-closed'
-    };
+  const handleDraftReply = async () => {
+    setDraftLoading(true);
+    try {
+      const res = await api.post(`/tickets/${id}/ai/draft`);
+      const draft = res.data?.draftReply || res.data?.reply || '';
+      setNewComment(draft);
+      notify.ai('✦ AI draft reply inserted');
+    } catch {
+      notify.error('Could not generate draft reply');
+    } finally {
+      setDraftLoading(false);
+    }
+  };
 
+  if (!ticket) {
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-up">
-            
-            {/* Back Navigation */}
-            <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium bg-transparent border-none cursor-pointer py-2 group"
-            >
-                <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Dashboard
-            </button>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 0' }}>
+        <SkeletonList count={4} lines={5} />
+      </div>
+    );
+  }
 
-            {/* Main Ticket Card (Light surface) */}
-            <div className="glass-card-light p-8 px-10">
-                
-                {/* Header */}
-                <div className="flex justify-between items-start mb-2 gap-6">
-                    <h1 className="text-gray-900 text-3xl font-bold tracking-tight leading-tight">
-                        {ticket.title}
-                    </h1>
-                    <div className="flex-shrink-0 mt-1.5">
-                        <span className={`badge ${priorityColors[ticket.priority] || 'badge-low'} px-3 py-1.5 text-sm`}>
-                            {ticket.priority}
-                        </span>
-                    </div>
-                </div>
+  const priorityColor = {
+    Critical: '#f87171', Urgent: '#f87171',
+    High: '#f97316', Medium: '#fbbf24', Low: '#60a5fa'
+  }[ticket.priority] || '#94a3b8';
 
-                {/* Description */}
-                <div className="mt-8 mb-8 text-gray-600 leading-relaxed whitespace-pre-wrap text-[15px]">
-                    {ticket.description}
-                </div>
+  const statusStyles = {
+    Open: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
+    InProgress: { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' },
+    'In Progress': { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' },
+    Resolved: { bg: 'rgba(34,197,94,0.15)', color: '#4ade80' },
+    Closed: { bg: 'rgba(100,116,139,0.15)', color: '#94a3b8' },
+  };
+  const ss = statusStyles[ticket.status] || { bg: 'rgba(100,116,139,0.15)', color: '#94a3b8' };
 
-                {/* Meta Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-gray-50/80 border border-gray-100 rounded-xl mb-8">
-                    <div>
-                        <span className="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Status</span>
-                        <span className={`badge ${statusColors[ticket.status] || 'badge-low'} px-2.5 py-1 text-xs`}>
-                             {ticket.status}
-                        </span>
-                    </div>
-                    <div>
-                        <span className="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Created</span>
-                        <span className="text-gray-700 font-medium text-sm">
-                            {new Date(ticket.createdAt).toLocaleDateString(undefined, {
-                                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                            })}
-                        </span>
-                    </div>
-                    <div>
-                        <span className="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Ticket ID</span>
-                        <span className="text-gray-500 font-mono text-sm bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                            {ticket.id.substring(0, 8)}...
-                        </span>
-                    </div>
-                </div>
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto', animation: 'fadeInUp 0.4s ease both' }}>
 
-                {/* Status Control — RBAC-Aware */}
-                <div className="pt-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                        <span>Change Status</span>
-                        {!isAdmin && (
-                            <svg className="w-4 h-4 text-gray-400 inline" fill="currentColor" viewBox="0 0 20 20" aria-label="Restricted">
-                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
-                        )}
-                        <span>:</span>
-                    </label>
+      {/* Back nav */}
+      <button
+        onClick={() => navigate('/dashboard')}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 500, marginBottom: 24, padding: '6px 0', transition: 'color 150ms' }}
+        onMouseEnter={e => e.currentTarget.style.color = '#f1f5f9'}
+        onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+      >
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Dashboard
+      </button>
 
-                    <div className={`relative ${!isAdmin ? 'group inline-block' : 'inline-block'}`}>
-                        <select
-                            value={ticket.status}
-                            onChange={(e) => handleStatusChange(e.target.value)}
-                            disabled={!isAdmin}
-                            className={`px-4 py-2.5 rounded-lg text-sm font-medium outline-none transition-all ${
-                                isAdmin 
-                                ? 'bg-white border-2 border-gray-200 text-gray-800 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 cursor-pointer shadow-sm'
-                                : 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed opacity-70 appearance-none'
-                            }`}
-                        >
-                            <option value="Open">Open</option>
-                            <option value="InProgress">In Progress</option>
-                            <option value="Resolved">Resolved</option>
-                            <option value="Closed">Closed</option>
-                        </select>
+      {/* 2-column grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
 
-                        {!isAdmin && (
-                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-10 hidden group-hover:block w-64">
-                                <div className="bg-gray-800 text-white text-xs font-medium rounded-lg px-3 py-2 text-center shadow-xl">
-                                    Only administrators can modify ticket status.
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+        {/* ── Left: Main content ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+          {/* Ticket header card */}
+          <div className="glass-card" style={{ padding: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: '#f1f5f9', margin: 0, lineHeight: 1.3, flex: 1 }}>
+                {ticket.title}
+              </h1>
+              <span style={{
+                padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, flexShrink: 0,
+                background: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}40`,
+              }}>
+                {ticket.priority}
+              </span>
             </div>
 
-            {/* AI Insights Card */}
-            <AiInsightsCard ticket={ticket} />
-
-            {/* Comments Section */}
-            <div className="glass-card-light p-8 px-10">
-                <h2 className="text-gray-900 text-xl font-bold mb-6 flex items-center gap-3">
-                    Comments 
-                    <span className="bg-gray-100 text-gray-500 text-sm py-0.5 px-2.5 rounded-full font-semibold">
-                        {comments.length}
-                    </span>
-                </h2>
-
-                <div className="space-y-4 mb-8">
-                    {comments.map((c) => (
-                        <div key={c.id} className="bg-gray-50 rounded-xl p-5 border border-gray-100 border-l-4 border-l-violet-300 shadow-sm transition-all hover:shadow-md">
-                            <div className="flex justify-between items-start mb-3">
-                                <span className="font-bold text-gray-900 tracking-tight">
-                                    {c.author ? c.author.fullName : 'Unknown'}
-                                </span>
-                                <span className="text-xs text-gray-400 font-medium bg-white px-2 py-1 rounded border border-gray-100 shadow-sm">
-                                    {new Date(c.createdAt).toLocaleString(undefined, {
-                                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                    })}
-                                </span>
-                            </div>
-                            <p className="text-gray-700 text-[15px] leading-relaxed m-0">{c.message}</p>
-                        </div>
-                    ))}
-                    
-                    {comments.length === 0 && (
-                        <div className="text-center py-10 px-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                            <div className="text-gray-300 text-4xl mb-3">💬</div>
-                            <p className="text-gray-500 italic font-medium">No comments yet.</p>
-                            <p className="text-gray-400 text-sm mt-1">Be the first to share your thoughts!</p>
-                        </div>
-                    )}
-                </div>
-
-                <form onSubmit={handleAddComment} className="flex flex-col gap-4 mt-2 border-t border-gray-100 pt-8">
-                    <textarea
-                        className="w-full px-5 py-4 bg-white border-2 border-gray-200 rounded-xl text-gray-900 text-[15px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all outline-none resize-none min-h-[120px]"
-                        placeholder="Add a comment... (Markdown not supported yet)"
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                    />
-                    <div className="flex justify-end">
-                        <button type="submit" className="btn-primary" disabled={!newComment.trim()}>
-                            Post Comment
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {/* Voice AI Assistant — floats bottom-right, explains this ticket */}
-            {ticket && (
-                <VoiceAssistant
-                    mode="ticket"
-                    ticketId={id}
-                    ticketTitle={ticket.title || ''}
-                />
+            {ticket.description && (
+              <div style={{
+                color: '#94a3b8', fontSize: 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap',
+                padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.05)', marginBottom: 20,
+              }}>
+                {ticket.description}
+              </div>
             )}
 
+            {/* Status change */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ color: '#475569', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status:</span>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <select
+                  value={ticket.status}
+                  onChange={e => handleStatusChange(e.target.value)}
+                  disabled={!isAdmin}
+                  style={{
+                    padding: '6px 28px 6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                    background: ss.bg, color: ss.color, border: `1px solid ${ss.color}40`,
+                    outline: 'none', cursor: isAdmin ? 'pointer' : 'not-allowed',
+                    appearance: 'none', WebkitAppearance: 'none',
+                    opacity: isAdmin ? 1 : 0.6,
+                  }}
+                >
+                  <option value="Open">Open</option>
+                  <option value="InProgress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={ss.color} strokeWidth="2.5" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+              {!isAdmin && <span style={{ color: '#334155', fontSize: 11 }}>Admin only</span>}
+            </div>
+          </div>
+
+          {/* AI Insights card */}
+          {ticket.aiStatus === 'DONE' && (
+            <div className="glass-card" style={{ padding: 24, border: '1px solid rgba(139,92,246,0.2)', background: 'rgba(139,92,246,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>✦</span> AI Analysis Results
+                </div>
+                <span className="badge badge-ai" style={{ fontSize: 10 }}>Gemini Flash</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                {[
+                  { label: 'Category', value: ticket.aiCategory },
+                  { label: 'Suggested Priority', value: ticket.aiSuggestedPriority },
+                  { label: 'Confidence', value: ticket.aiConfidence != null ? `${Math.round(ticket.aiConfidence * 100)}%` : null },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                    <div style={{ color: '#475569', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{label}</div>
+                    <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: 15 }}>{value || '—'}</div>
+                  </div>
+                ))}
+              </div>
+              {ticket.aiReasoning && (
+                <div style={{ marginTop: 14, padding: '12px 14px', background: 'rgba(139,92,246,0.06)', borderRadius: 8, border: '1px solid rgba(139,92,246,0.12)', borderLeft: '3px solid #7c3aed' }}>
+                  <span style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>AI Reasoning: </span>
+                  <span style={{ color: '#94a3b8', fontSize: 13, fontStyle: 'italic', lineHeight: 1.6 }}>{ticket.aiReasoning}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {ticket.aiStatus === 'PENDING' && (
+            <div className="glass-card" style={{ padding: 24, border: '1px dashed rgba(139,92,246,0.2)', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#a78bfa' }}>
+                <div style={{ width: 16, height: 16, border: '2px solid rgba(167,139,250,0.3)', borderTopColor: '#a78bfa', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                AI Analysis in progress...
+              </div>
+            </div>
+          )}
+
+          {/* Comments section */}
+          <div className="glass-card" style={{ padding: 28 }}>
+            <h2 style={{ color: '#f1f5f9', fontSize: 17, fontWeight: 700, margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              Comments
+              <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: 12, padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
+                {comments.length}
+              </span>
+            </h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              {comments.map(c => {
+                const authorName = c.author?.fullName || c.author?.email || 'Unknown';
+                return (
+                  <div key={c.id} style={{
+                    display: 'flex', gap: 12, padding: '14px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                    borderLeft: '3px solid rgba(139,92,246,0.4)',
+                  }}>
+                    <Avatar name={authorName} size={34} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 13 }}>{authorName}</span>
+                        <span style={{ color: '#334155', fontSize: 11, fontWeight: 500 }}>{timeAgo(c.createdAt)}</span>
+                      </div>
+                      <p
+                        style={{ color: '#94a3b8', fontSize: 14, margin: 0, lineHeight: 1.7 }}
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(c.message) }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+
+              {comments.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#334155' }}>
+                  <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.4 }}>💬</div>
+                  <p style={{ fontSize: 14, margin: 0 }}>No comments yet. Be the first!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Comment form */}
+            <form onSubmit={handleAddComment} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20 }}>
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <textarea
+                  rows={4}
+                  placeholder="Add a comment... (supports **bold** and *italic*)"
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10, color: '#f1f5f9', padding: '12px 14px', fontSize: 14,
+                    outline: 'none', resize: 'none', transition: 'border-color 150ms', boxSizing: 'border-box', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleDraftReply}
+                  disabled={draftLoading}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)',
+                    color: '#a78bfa', borderRadius: 8, padding: '8px 14px',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: draftLoading ? 0.6 : 1, transition: 'all 150ms',
+                  }}
+                >
+                  {draftLoading
+                    ? <><div style={{ width: 12, height: 12, border: '1.5px solid rgba(167,139,250,0.3)', borderTopColor: '#a78bfa', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Generating...</>
+                    : <><span>✦</span> AI Draft Reply</>}
+                </button>
+                <button type="submit" className="btn-primary" disabled={!newComment.trim()}>
+                  Post Comment
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-    );
+
+        {/* ── Right: Sidebar ── */}
+        <div style={{ position: 'sticky', top: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Ticket metadata */}
+          <div className="glass-card" style={{ padding: 20 }}>
+            <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Ticket Details</div>
+            {[
+              { label: 'ID', value: <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>{ticket.id?.substring(0, 8)}...</span> },
+              { label: 'Created', value: timeAgo(ticket.createdAt) },
+              { label: 'Status', value: <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: ss.bg, color: ss.color }}>{ticket.status}</span> },
+              { label: 'Priority', value: <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${priorityColor}18`, color: priorityColor }}>{ticket.priority}</span> },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ color: '#475569', fontSize: 12, fontWeight: 500 }}>{label}</span>
+                <span style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Activity */}
+          <div className="glass-card" style={{ padding: 20 }}>
+            <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Activity</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>+</div>
+                <div>
+                  <div style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.4 }}>Ticket created</div>
+                  <div style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>{timeAgo(ticket.createdAt)}</div>
+                </div>
+              </div>
+              {ticket.aiStatus === 'DONE' && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>✦</div>
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.4 }}>AI analysis completed</div>
+                    <div style={{ color: '#a78bfa', fontSize: 11, marginTop: 2 }}>Category: {ticket.aiCategory}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {ticket && <VoiceAssistant mode="ticket" ticketId={id} ticketTitle={ticket.title || ''} />}
+    </div>
+  );
 }
 
 export default TicketDetail;

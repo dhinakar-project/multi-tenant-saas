@@ -23,6 +23,7 @@ public class InviteService {
     private final TenantInviteRepository tenantInviteRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     @Transactional
     public TenantInvite createInvite(String email, String role) {
@@ -33,7 +34,6 @@ public class InviteService {
         }
 
         // Security: validate role is within allowed set
-        // Prevents privilege escalation via crafted invite payloads
         java.util.Set<String> allowedRoles = java.util.Set.of("MEMBER", "TENANT_ADMIN");
         if (!allowedRoles.contains(role)) {
             throw new IllegalArgumentException("Invalid invite role. Allowed values: MEMBER, TENANT_ADMIN");
@@ -56,6 +56,11 @@ public class InviteService {
 
         auditLogService.log("INVITE_CREATED", "TENANT_INVITE", saved.getId(),
                 "Created invite for email: " + email + " with role: " + role);
+
+        // Send invite email asynchronously — never blocks this transaction
+        String inviteUrl = "https://your-app.com/join?token=" + saved.getToken();
+        emailService.sendInviteEmail(email, tenantId.toString(), inviteUrl);
+
         return saved;
     }
 

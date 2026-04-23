@@ -1,20 +1,26 @@
 package com.example.saas.service;
 
+import com.example.saas.core.TenantContext;
 import com.example.saas.dto.TicketCreateRequest;
 import com.example.saas.exception.ResourceNotFoundException;
 import com.example.saas.model.Ticket;
 import com.example.saas.model.User;
 import com.example.saas.repository.TicketRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -25,6 +31,12 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final AuditLogService auditLogService;
     private final TicketCategorizationService ticketCategorizationService;
+
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
 
     @Transactional(readOnly = true)
     public Page<Ticket> getAllTickets(int page, int size, String sort, String status) {
@@ -64,6 +76,13 @@ public class TicketService {
             "Created ticket: " + request.getTitle() +
                 (request.getAiCategory() != null ? " [AI category: " + request.getAiCategory() + "]" : ""));
 
+        // Prometheus: track tickets created per tenant
+        if (meterRegistry != null) {
+            UUID tenantId = TenantContext.getTenantId();
+            meterRegistry.counter("tickets.created.total",
+                "tenant", tenantId != null ? tenantId.toString() : "unknown").increment();
+        }
+
         // Trigger async AI categorization (runs in background thread pool)
         ticketCategorizationService.categorizeAsync(saved.getId(), saved.getTitle(), saved.getDescription());
 
@@ -77,7 +96,25 @@ public class TicketService {
         ticket.setStatus(status);
         Ticket saved = ticketRepository.save(ticket);
         auditLogService.log("TICKET_STATUS_CHANGED", "TICKET", saved.getId(),
-            "Status: " + oldStatus + " → " + status);
+            "Status: " + oldStatus + " \u2192 " + status);
+
+        // Broadcast real-time status change to tenant's WebSocket topic
+        if (messagingTemplate != null) {
+            UUID tenantId = TenantContext.getTenantId();
+            if (tenantId != null) {
+                messagingTemplate.convertAndSend(
+                    "/topic/tenant/" + tenantId + "/tickets",
+                    Map.of(
+                        "type", "STATUS_CHANGE",
+                        "ticketId", id.toString(),
+                        "newStatus", status,
+                        "oldStatus", oldStatus,
+                        "timestamp", Instant.now().toString()
+                    )
+                );
+            }
+        }
+
         return saved;
     }
 

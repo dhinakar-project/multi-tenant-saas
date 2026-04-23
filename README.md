@@ -1,41 +1,150 @@
-# Multi-Tenant SaaS — Ticket Management Platform
+# Multi-Tenant SaaS — AI-Powered Ticket Management Platform
 
-> A production-grade, AI-powered multi-tenant ticket management system built as a final year project.
+[![CI/CD](https://github.com/your-username/multi-tenant-saas/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/multi-tenant-saas/actions/workflows/ci.yml)
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/17/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Clerk](https://img.shields.io/badge/Auth-Clerk_JWT-6C47FF?logo=clerk&logoColor=white)](https://clerk.com)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini_2.0-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C?logo=prometheus&logoColor=white)](https://prometheus.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+
+> A production-grade, AI-powered multi-tenant ticket management system with real-time WebSocket updates, Prometheus/Grafana observability, and automated CI/CD.
+
+---
+
+## System Architecture
+
+```mermaid
+graph TB
+    subgraph Client["🌐 Client Layer"]
+        FE["React 18 + Vite<br/>TailwindCSS · Aurora Dark UI<br/>Zustand State · Command Palette"]
+        WS_CLIENT["@stomp/stompjs<br/>SockJS WebSocket Client"]
+    end
+
+    subgraph Auth["🔐 Auth — Clerk"]
+        CLERK["Clerk RS256 JWT<br/>JWKS Public Key Endpoint"]
+    end
+
+    subgraph Gateway["⚡ API Gateway — Spring Boot 3.2"]
+        SEC["ClerkAuthenticationFilter<br/>JWT Validation · User Provisioning"]
+        RL["Bucket4j Rate Limiter<br/>20 req/min per user"]
+        TENANT["TenantInterceptor<br/>ThreadLocal TenantContext"]
+        CORS["CORS Filter"]
+    end
+
+    subgraph Controllers["🎮 REST Controllers"]
+        TC["TicketController"]
+        UC["UserController"]
+        IC["InviteController"]
+        AC["AuditController"]
+        VAPI["VapiController<br/>Custom LLM Endpoint"]
+    end
+
+    subgraph Services["⚙️ Service Layer"]
+        TS["TicketService<br/>WebSocket Broadcast"]
+        GS["GeminiService<br/>WebClient · 4 AI Features"]
+        ES["EmailService<br/>Resend API · @Async"]
+        IS["InviteService"]
+        ALS["AuditLogService"]
+        TCS["TicketCategorizationService<br/>@Async ThreadPool"]
+    end
+
+    subgraph WS["🔌 WebSocket — STOMP"]
+        WS_SERVER["Spring WebSocket Broker<br/>/topic/tenant/{id}/tickets"]
+    end
+
+    subgraph DB["🗄️ Data Layer"]
+        JPA["Spring Data JPA<br/>Hibernate Session Filters"]
+        MYSQL["MySQL 8.0<br/>Flyway 12 Migrations"]
+    end
+
+    subgraph AI["🤖 AI / External APIs"]
+        GEMINI["Google Gemini 2.0 Flash<br/>REST via WebClient"]
+        VAPI_SVC["Vapi Voice AI<br/>Custom LLM Bridge"]
+        RESEND["Resend Email API<br/>Transactional Emails"]
+    end
+
+    subgraph Observability["📊 Observability"]
+        PROM["Prometheus<br/>/actuator/prometheus"]
+        GRAF["Grafana<br/>:3000"]
+    end
+
+    FE -->|"HTTPS + Bearer JWT"| CORS
+    FE -->|"SockJS WS"| WS_CLIENT
+    WS_CLIENT <-->|"STOMP"| WS_SERVER
+
+    CORS --> SEC
+    SEC -->|"Validate RS256"| CLERK
+    SEC --> RL --> TENANT
+
+    TENANT --> TC & UC & IC & AC & VAPI
+
+    TC --> TS
+    TS -->|"STATUS_CHANGE event"| WS_SERVER
+    TS --> JPA
+    TS --> ALS
+
+    TC --> GS
+    GS -->|"WebClient"| GEMINI
+    GS -->|"Micrometer"| PROM
+
+    IC --> IS
+    IS --> ES
+    ES -->|"@Async"| RESEND
+
+    TCS -->|"@Async"| GS
+
+    JPA -->|"WHERE tenant_id=?"| MYSQL
+
+    PROM --> GRAF
+
+    TS -->|"tickets.created.total"| PROM
+```
 
 ---
 
 ## Architecture Highlights
 
-### True Multi-Tenancy
-Tenant isolation is enforced **at the database query level** via Hibernate named filters, activated through Spring AOP — not just application-layer filtering. Each HTTP request carries its tenant context in a `ThreadLocal<UUID>` (via `TenantContext`) that is:
-1. Set by `TenantInterceptor` from the `X-Tenant-Slug` header
-2. Used by the Hibernate `@Filter` to append `WHERE tenant_id = ?` to every query
-3. Cleared by `afterCompletion` so it never leaks between requests
+### ✅ True Multi-Tenancy (Hibernate Filter Isolation)
+Tenant isolation is enforced **at the database query level** via Hibernate named filters activated through Spring AOP — not just application-layer filtering. Each request flows through:
 
-This is verified by a dedicated integration test (`TenantIsolationTest`) that proves Tenant B cannot access Tenant A's records even when directly querying the repository.
+1. `TenantInterceptor` → sets `ThreadLocal<UUID>` from `X-Tenant-Slug` header
+2. Hibernate `@Filter` → appends `WHERE tenant_id = ?` to **every** query
+3. `afterCompletion` → clears `TenantContext` to prevent cross-request leakage
 
-### Clerk JWT Authentication (RS256)
-Token validation uses Clerk's **JWKS endpoint** (public key cryptography — RS256). No shared secrets. The `ClerkAuthenticationFilter` fetches and caches the JWKS, verifies the JWT signature, and automatically provisions new users on their first login.
+Verified by `TenantIsolationTest` — proves Tenant B cannot access Tenant A's data even querying repositories directly.
 
-### 3-Layer RBAC
+### ✅ Clerk JWT Authentication (RS256 / JWKS)
+No shared secrets. `ClerkAuthenticationFilter` fetches and caches the JWKS, verifies RS256 signatures, and auto-provisions users on first login.
+
+### ✅ 3-Layer RBAC
 | Layer | Mechanism |
 |-------|-----------|
 | Route | Spring Security `authorizeHttpRequests` |
 | Method | `@PreAuthorize("hasRole('TENANT_ADMIN')")` |
-| UI | React context + conditional rendering |
+| UI | React context + conditional rendering + AdminRoute guard |
 
-### AI-Powered Features (Gemini 2.0 Flash)
-- **Real-time categorization** — debounced 800ms call while user types the ticket title
-- **Draft reply generation** — AI writes the first response for support agents
-- **Semantic duplicate detection** — detects similar open tickets before submission
-- **Rate limited** — Bucket4j token-bucket (20 req/min per user) prevents abuse
-- **Prompt injection protection** — `sanitize()` strips `ignore previous instructions` patterns
+### ✅ AI Features (Gemini 2.0 Flash via WebClient)
+| Feature | Description |
+|---------|-------------|
+| **Live Categorization** | Debounced 900ms call as user types — AI suggests category + priority |
+| **Circular Confidence Meter** | SVG ring showing AI confidence % on TicketCreate |
+| **Draft Reply Generation** | AI writes first support response inline in comment box |
+| **Semantic Duplicate Detection** | Detects similar open tickets before submission |
+| **Rate Limited** | Bucket4j token-bucket (20 req/min per user) |
+| **Prompt Injection Protection** | `sanitize()` strips `ignore previous instructions` patterns |
 
-### Async Processing
-AI categorization runs in a non-blocking thread pool (`@Async`) so ticket creation is never delayed while waiting for Gemini. The ticket saves first, then categorization fires in background.
+> **Migrated to WebClient** — all Gemini calls are now non-blocking reactive HTTP with 10s timeout, Prometheus timing, and graceful `onErrorReturn` fallback.
 
-### Voice Assistant (Vapi)
-A fully functional voice AI assistant powered by Vapi + Gemini 2.0. The `/api/vapi/llm` custom LLM endpoint receives OpenAI-compatible chat completion requests from Vapi servers and responds with tenant-aware ticket data.
+### ✅ Real-Time WebSocket Updates
+Status changes broadcast to `/topic/tenant/{tenantId}/tickets` via STOMP. Frontend subscribes via `useTicketSocket` hook and updates Zustand store — no polling.
+
+### ✅ Observability
+- `micrometer-registry-prometheus` exposes `/actuator/prometheus`
+- Custom metrics: `gemini.call.duration`, `gemini.calls.total`, `tickets.created.total`
+- Grafana on `:3000` wired to Prometheus via `docker-compose.yml`
 
 ---
 
@@ -44,13 +153,20 @@ A fully functional voice AI assistant powered by Vapi + Gemini 2.0. The `/api/va
 | Layer | Technology |
 |-------|------------|
 | Backend | Spring Boot 3.2, Java 17 |
-| Auth | Clerk (RS256 JWT via JWKS) |
+| HTTP Client | WebClient (reactive, replaces RestTemplate) |
+| Auth | Clerk RS256 JWT via JWKS |
 | Database | MySQL 8.0 + Flyway (12 migrations) |
-| ORM | Spring Data JPA + Hibernate filters |
-| AI | Google Gemini 2.0 Flash |
-| Voice | Vapi (custom LLM) |
+| ORM | Spring Data JPA + Hibernate session filters |
+| Real-time | Spring WebSocket / STOMP |
+| AI | Google Gemini 2.0 Flash (WebClient) |
+| Voice | Vapi (custom LLM endpoint) |
+| Email | Resend API (@Async, fire-and-forget) |
 | Rate Limiting | Bucket4j (token-bucket) |
+| Metrics | Micrometer + Prometheus + Grafana |
+| State Mgmt | Zustand (frontend) |
 | Frontend | React 18, Vite, TailwindCSS |
+| CI/CD | GitHub Actions (test → build → docker) |
+| Coverage | JaCoCo (10% enforced minimum, target 70%) |
 | Infra | Docker Compose, Nginx, Vercel |
 | Testing | JUnit 5, Mockito, Spring MockMvc, H2 |
 
@@ -59,71 +175,55 @@ A fully functional voice AI assistant powered by Vapi + Gemini 2.0. The `/api/va
 ## Quick Start
 
 ```bash
-# 1. Copy and fill environment variables
+# 1. Copy and configure environment variables
 cp .env.example .env.local
-# Edit .env.local with your actual values (DB, Clerk, Gemini, Vapi keys)
+# Fill in: DB_*, CLERK_*, GEMINI_API_KEY, VAPI_*, RESEND_API_KEY
 
-# 2. Start everything with Docker Compose
+# 2. Start all services (MySQL + Backend + Frontend + Prometheus + Grafana)
 docker compose up --build
 
-# Frontend:   http://localhost:3001
-# Backend:    http://localhost:8081
-# Swagger UI: http://localhost:8081/swagger-ui.html
-# Health:     http://localhost:8081/actuator/health
+# Frontend:    http://localhost:3001
+# Backend:     http://localhost:8081
+# Swagger UI:  http://localhost:8081/swagger-ui.html
+# Prometheus:  http://localhost:9090
+# Grafana:     http://localhost:3000  (admin / admin)
+# Health:      http://localhost:8081/actuator/health
+# Metrics:     http://localhost:8081/actuator/prometheus
 ```
 
 ---
 
 ## Security Model
 
-### Credential Management
-- All secrets are injected via environment variables — no hardcoded credentials anywhere in source
-- `.env.local` is in `.gitignore` and never committed
-- See `.env.example` for all required variables
-
-### Actuator Hardening
-- `/actuator/health` is public (for load balancer health probes)
-- All other actuator endpoints require `TENANT_ADMIN` role
-
-### Input Validation
-- All DTO fields have Bean Validation constraints (`@NotBlank`, `@Size`)
-- AI prompt inputs are sanitized before reaching Gemini
-
-### Request Tracing
-Every HTTP response includes an `X-Request-ID` header (generated or forwarded) that correlates to MDC log entries for end-to-end tracing.
+| Area | Implementation |
+|------|---------------|
+| Secrets | Environment variables only — no hardcoded credentials |
+| Actuator | Only `health`, `info`, `metrics`, `prometheus` exposed |
+| Input | Bean Validation on all DTOs + AI prompt sanitization |
+| Rate Limiting | Bucket4j per-user token bucket on AI endpoints |
+| Tracing | `X-Request-ID` in every response, correlated in MDC logs |
+| CORS | Explicit allowlist — localhost + Vercel production URL |
 
 ---
 
-## Running Tests
+## Running Tests with Coverage
 
 ```bash
 cd backend
-mvn test
+mvn test jacoco:report
+
+# HTML report: target/site/jacoco/index.html
+# CI enforces minimum 10% line coverage (target: 70%)
 ```
 
-Test suite includes:
-| Test | What it proves |
-|------|----------------|
-| `TenantIsolationTest` | Tenant B cannot see Tenant A's data (core security guarantee) |
-| `TicketServiceTest` | Business logic: status changes, audit logs, async categorization |
-| `TicketControllerSecurityTest` | Unauthenticated requests get 401; public endpoints remain accessible |
-
----
-
-## Database Schema (Flyway)
-
-12 versioned migrations in `backend/src/main/resources/db/migration/`:
-
-| Version | Description |
-|---------|-------------|
-| V1 | Initial schema (tenants, users, tickets) |
-| V2–V12 | Projects, comments, audit logs, invites, AI fields, indexes |
-
----
-
-## API Documentation
-
-Swagger UI is available at `/swagger-ui.html` when the backend is running. All endpoints include request/response schemas, authorization requirements, and example values.
+| Test Class | What It Proves |
+|------------|---------------|
+| `TenantIsolationTest` | Tenant B cannot see Tenant A's data (core security) |
+| `TicketServiceTest` | Status change audit logs, WebSocket broadcast trigger |
+| `GeminiServiceTest` | Graceful degradation, sanitization, blank API key |
+| `InviteServiceTest` | Role validation, token generation, expiry, duplicate guard |
+| `AuditLogServiceTest` | Null TenantContext skip, correct field mapping |
+| `TicketControllerSecurityTest` | 401 on unauthenticated requests |
 
 ---
 
@@ -131,35 +231,45 @@ Swagger UI is available at `/swagger-ui.html` when the backend is running. All e
 
 ```
 multi_tenant_Saas_project/
-├── backend/                     # Spring Boot application
+├── .github/workflows/ci.yml        # CI/CD: test → coverage → docker
+├── monitoring/
+│   └── prometheus.yml              # Prometheus scrape config
+├── backend/
 │   └── src/
 │       ├── main/java/com/example/saas/
-│       │   ├── config/          # Security, CORS, interceptors, rate limiting
-│       │   ├── controller/      # REST API controllers
-│       │   ├── core/            # TenantContext (ThreadLocal)
-│       │   ├── dto/             # Request/response DTOs
-│       │   ├── exception/       # Typed exceptions + global handler
-│       │   ├── model/           # JPA entities (with Hibernate filters)
-│       │   ├── repository/      # Spring Data JPA repositories
-│       │   ├── security/        # Clerk JWT filter + tenant filter
-│       │   └── service/         # Business logic + AI services
-│       └── test/                # Unit + integration tests
-├── frontend/                    # React + Vite application
+│       │   ├── config/             # Security, WebSocket, CORS, interceptors
+│       │   ├── controller/         # REST + Vapi LLM controllers
+│       │   ├── core/               # TenantContext (ThreadLocal)
+│       │   ├── dto/                # Request/response DTOs
+│       │   ├── exception/          # Typed exceptions + global handler
+│       │   ├── model/              # JPA entities (Hibernate filters)
+│       │   ├── repository/         # Spring Data JPA repositories
+│       │   ├── security/           # Clerk JWT filter + tenant filter
+│       │   └── service/            # Business logic, AI, Email, WebSocket
+│       └── test/                   # Unit + integration tests
+├── frontend/
 │   └── src/
-│       ├── components/          # Reusable UI components
-│       ├── context/             # Auth + tenant context
-│       ├── pages/               # Route-level page components
-│       └── api/                 # Axios API client
-├── docker-compose.yml           # MySQL + Backend + Frontend
-└── .env.example                 # Environment variable template
+│       ├── components/             # Layout, CommandPalette, ErrorBoundary
+│       ├── components/admin/       # AdminSidebar, AnalyticsChart, StatCard
+│       ├── context/                # Auth + tenant context
+│       ├── hooks/                  # useTicketSocket (WebSocket)
+│       ├── pages/                  # Dashboard, TicketCreate, TicketDetail, Admin
+│       ├── store/                  # Zustand stores (useTicketStore)
+│       └── utils/                  # toast.js, timeAgo.js
+└── docker-compose.yml              # MySQL + Backend + Frontend + Prometheus + Grafana
 ```
 
 ---
 
-## Final Year Project Differentiators
+## Key Engineering Decisions (ADRs)
 
-1. **Genuine multi-tenancy** — not just `WHERE user_id = ?` filtering; Hibernate session-level filter enforced for every query
-2. **Zero System.out.println** — production-ready structured logging with SLF4J + Logback, request IDs in every log line
-3. **Real tests** — TenantIsolationTest is the kind of test examiners want to see because it tests the hardest part
-4. **AI depth** — 4 distinct Gemini features + voice AI + rate limiting + prompt injection protection
-5. **Security thinking** — typed exceptions, actuator hardening, credential externalization, input sanitization
+| Decision | Rationale |
+|----------|-----------|
+| **Hibernate session filter** over `WHERE user_id` | True tenant isolation — enforced at ORM level, not application code |
+| **Clerk JWKS** over Spring Security OAuth2 | Simpler setup, RS256 public-key-only validation, no secret leakage |
+| **WebClient** over RestTemplate | Non-blocking reactive HTTP, better timeout control, Prometheus integration |
+| **Zustand** over Redux | Zero boilerplate, devtools support, minimal API surface |
+| **STOMP/SockJS** over raw WebSocket | Auto-reconnect, fallback transports, topic routing built-in |
+| **Resend** over SMTP | Deliverability, HTML templates, transactional email purpose-built API |
+| **H2 in-memory** for tests | No DB infrastructure needed in CI, MySQL-compatibility mode |
+| **JaCoCo** enforced in CI | Prevents coverage regression — gate before merge |

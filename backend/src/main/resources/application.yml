@@ -32,10 +32,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   pattern:
@@ -55,3 +58,8 @@ vapi:
   assistant-id: ${VAPI_ASSISTANT_ID:}
   backend-url: ${VAPI_BACKEND_URL:http://localhost:8081}
 
+# Resend Email Notifications
+# Sign up at https://resend.com and verify your domain
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from-email: ${RESEND_FROM_EMAIL:noreply@yourdomain.com}
