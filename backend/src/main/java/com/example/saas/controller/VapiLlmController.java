@@ -114,7 +114,8 @@ public class VapiLlmController {
 
         return ResponseEntity.ok()
                 .header("Content-Type", "text/event-stream;charset=UTF-8")
-                .header("Cache-Control", "no-cache")
+                .header("Cache-Control", "no-cache, no-transform")
+                .header("X-Accel-Buffering", "no")
                 .header("Connection", "keep-alive")
                 .body(sse.toString());
     }

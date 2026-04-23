@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.example.saas.service.EmailService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -35,6 +36,9 @@ class InviteServiceTest {
 
     @Mock
     private AuditLogService auditLogService;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private InviteService inviteService;

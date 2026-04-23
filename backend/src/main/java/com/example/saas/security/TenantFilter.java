@@ -52,6 +52,11 @@ public class TenantFilter extends OncePerRequestFilter {
             return true;
         }
 
+        // Skip Vapi server-to-server calls — no tenant header is sent by Vapi
+        if (path.startsWith("/api/vapi")) {
+            return true;
+        }
+
         return false;
     }
 

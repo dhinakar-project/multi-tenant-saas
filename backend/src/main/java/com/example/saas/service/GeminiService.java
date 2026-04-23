@@ -24,7 +24,7 @@ import java.util.Map;
 @Service
 public class GeminiService {
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.api-key:}")
     private String apiKey;
 
     @Value("${gemini.model}")
@@ -47,6 +47,12 @@ public class GeminiService {
     public AiSuggestResponse suggestCategoryAndPriority(String title, String description) {
         String safeTitle = sanitize(title);
         String safeDesc  = sanitize(description);
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("GeminiService.suggestCategoryAndPriority: GEMINI_API_KEY not set — returning defaults");
+            return new AiSuggestResponse("Medium", "Other", null, null);
+        }
+
         String prompt = """
             You are a support ticket classifier for an enterprise SaaS product.
             Analyze the following ticket and return a JSON object with exactly these two fields:

@@ -20,8 +20,7 @@ clerk:
   issuer: https://example.clerk.accounts.dev
 
 gemini:
-  api:
-    key: test-key
+  api-key: test-key
   model: gemini-2.0-flash
 
 management:

@@ -92,7 +92,7 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
         transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en-US' },
         model: {
           provider: 'custom-llm',
-          url: `${VAPI_BACKEND_URL}/api/vapi/llm?ngrok-skip-browser-warning=true`,
+          url: `${VAPI_BACKEND_URL}/api/vapi/llm`,
           model: 'gpt-4o-mini',
           messages: [{ role: 'system', content: systemPrompt }],
         },
