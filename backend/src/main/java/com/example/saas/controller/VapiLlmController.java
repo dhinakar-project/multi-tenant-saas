@@ -48,10 +48,20 @@ public class VapiLlmController {
             List<Map<String, Object>> rawMessages =
                     (List<Map<String, Object>>) body.getOrDefault("messages", List.of());
 
+            // Whitelist: only valid OpenAI roles are forwarded.
+            // Vapi can echo back messages with role=TENANT_ADMIN (leaked from Spring Security
+            // principal metadata). Passing those to Vapi in the response corrupts its message
+            // list and triggers the "Meeting has ended due to ejection" error.
+            java.util.Set<String> VALID_ROLES = java.util.Set.of("system", "user", "assistant", "tool", "function");
+
             List<Map<String, String>> messages = new ArrayList<>();
             for (Map<String, Object> rawMsg : rawMessages) {
                 String role    = String.valueOf(rawMsg.getOrDefault("role", ""));
                 String content = String.valueOf(rawMsg.getOrDefault("content", ""));
+                if (!VALID_ROLES.contains(role)) {
+                    log.warn("VapiLlmController: dropping message with invalid role '{}' — not a valid OpenAI role", role);
+                    continue;
+                }
                 messages.add(Map.of("role", role, "content", content));
             }
 
