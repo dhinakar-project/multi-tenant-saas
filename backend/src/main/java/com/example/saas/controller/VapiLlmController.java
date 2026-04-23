@@ -38,21 +38,22 @@ public class VapiLlmController {
     private final ObjectMapper objectMapper;
 
     @PostMapping(value = "/llm",
-            consumes = MediaType.APPLICATION_JSON_VALUE)
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> handleLlmRequest(
             @RequestBody Map<String, Object> body) {
 
         try {
-            // ── 1. Parse messages array ────────────────────────────────────
+            // ── 1. Parse messages — whitelist valid OpenAI roles only ───────
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> rawMessages =
                     (List<Map<String, Object>>) body.getOrDefault("messages", List.of());
 
-            // Whitelist: only valid OpenAI roles are forwarded.
-            // Vapi can echo back messages with role=TENANT_ADMIN (leaked from Spring Security
-            // principal metadata). Passing those to Vapi in the response corrupts its message
-            // list and triggers the "Meeting has ended due to ejection" error.
-            java.util.Set<String> VALID_ROLES = java.util.Set.of("system", "user", "assistant", "tool", "function");
+            // Only valid OpenAI roles are forwarded.
+            // Vapi sometimes injects messages with role=TENANT_ADMIN (Spring Security
+            // principal metadata leaked into Vapi call metadata). Filtering here
+            // prevents those from corrupting the conversation and causing ejection.
+            Set<String> VALID_ROLES = Set.of("system", "user", "assistant", "tool", "function");
 
             List<Map<String, String>> messages = new ArrayList<>();
             for (Map<String, Object> rawMsg : rawMessages) {
@@ -75,58 +76,66 @@ public class VapiLlmController {
                 }
             }
 
-            log.debug("Vapi LLM request payload: {}", body);
-            log.debug("Vapi LLM parsed: userMessage='{}', messages={}", userMessage, messages.size());
+            log.info("Vapi LLM request: userMessage='{}', totalMessages={}", userMessage, messages.size());
 
-            // ── 3. Process through conversation service ────────────────────
+            // ── 3. Process and return ──────────────────────────────────────
             String assistantReply = vapiConversationService.processMessage(userMessage, messages);
-            return buildSseResponse(assistantReply);
+            return buildJsonResponse(assistantReply);
 
         } catch (Exception e) {
             log.error("VapiLlmController: unhandled error", e);
-            return buildSseResponse("I'm having trouble right now. Please try again in a moment.");
+            return buildJsonResponse("I'm having trouble right now. Please try again in a moment.");
         }
     }
 
-    private ResponseEntity<String> buildSseResponse(String reply) {
+    /**
+     * Returns a standard OpenAI chat.completion (non-streaming) JSON response.
+     *
+     * WHY non-streaming instead of SSE:
+     * Spring Boot's ResponseEntity<String> buffers the entire response body before
+     * sending it, even when Content-Type is text/event-stream. Vapi's SSE parser
+     * then receives the full blob as a single chunk instead of incremental events,
+     * causing parse failures. The corrupted parse state manifests as Vapi injecting
+     * a message with "role: TENANT_ADMIN" into its internal conversation history,
+     * which Daily.co WebRTC then rejects, triggering "Meeting has ended due to ejection".
+     *
+     * A plain JSON chat.completion response avoids all of this — it is simpler,
+     * always parseable, and is what Vapi expects when stream=false.
+     */
+    private ResponseEntity<String> buildJsonResponse(String reply) {
         String safeContent = reply
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
-                .replace("\r", "");
+                .replace("\r", "")
+                .replace("\t", "\\t");
 
         String completionId = "chatcmpl-" + UUID.randomUUID().toString().replace("-", "");
         long createdAt = System.currentTimeMillis() / 1000L;
 
-        StringBuilder sse = new StringBuilder();
-
-        // Chunk 1: Send content payload
-        sse.append("data: {")
-           .append("\"id\":\"").append(completionId).append("\",")
-           .append("\"object\":\"chat.completion.chunk\",")
-           .append("\"created\":").append(createdAt).append(",")
-           .append("\"model\":\"gpt-4o-mini\",")
-           .append("\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"")
-           .append(safeContent).append("\"},\"finish_reason\":null}]")
-           .append("}\n\n");
-
-        // Chunk 2: Send stop signal
-        sse.append("data: {")
-           .append("\"id\":\"").append(completionId).append("\",")
-           .append("\"object\":\"chat.completion.chunk\",")
-           .append("\"created\":").append(createdAt).append(",")
-           .append("\"model\":\"gpt-4o-mini\",")
-           .append("\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]")
-           .append("}\n\n");
-
-        // Chunk 3: DONE signal
-        sse.append("data: [DONE]\n\n");
+        String json = "{"
+            + "\"id\":\"" + completionId + "\","
+            + "\"object\":\"chat.completion\","
+            + "\"created\":" + createdAt + ","
+            + "\"model\":\"gpt-4o-mini\","
+            + "\"choices\":[{"
+            +   "\"index\":0,"
+            +   "\"message\":{"
+            +     "\"role\":\"assistant\","
+            +     "\"content\":\"" + safeContent + "\""
+            +   "},"
+            +   "\"finish_reason\":\"stop\""
+            + "}],"
+            + "\"usage\":{"
+            +   "\"prompt_tokens\":0,"
+            +   "\"completion_tokens\":0,"
+            +   "\"total_tokens\":0"
+            + "}"
+            + "}";
 
         return ResponseEntity.ok()
-                .header("Content-Type", "text/event-stream;charset=UTF-8")
-                .header("Cache-Control", "no-cache, no-transform")
-                .header("X-Accel-Buffering", "no")
-                .header("Connection", "keep-alive")
-                .body(sse.toString());
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .header("Cache-Control", "no-cache, no-store")
+                .body(json);
     }
 }

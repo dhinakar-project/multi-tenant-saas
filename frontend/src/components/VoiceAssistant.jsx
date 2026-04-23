@@ -85,7 +85,6 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
       'Help the admin understand their ticket queue and issues.',
       'Keep responses under 3 sentences.',
       'Never use markdown, bullet points, or special characters.',
-      'Start the conversation by greeting the user and briefly summarizing their ticket status.',
     ].join('\n');
 
     try {
@@ -98,6 +97,7 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
           messages: [{ role: 'system', content: systemPrompt }],
         },
         voice: { provider: 'openai', voiceId: 'alloy' },
+        firstMessage: 'Hello! Ask me anything about your tickets.',
         silenceTimeoutSeconds: 30,
         maxDurationSeconds: 300,
       });
