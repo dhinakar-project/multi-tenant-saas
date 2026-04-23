@@ -13,8 +13,9 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
   const [lastSpeaker, setLastSpeaker]   = useState('');
 
   const vapiRef      = useRef(null);
+  const lastErrorRef = useRef(false);
   const { getToken } = useAuth();
-  const { tenantSlug } = useTenant();
+  const { tenantSlug, isBootstrapping } = useTenant();
 
   /* ── Inject keyframes once ────────────────────────────────────────────── */
   useEffect(() => {
@@ -50,7 +51,16 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
         vapi = new Vapi(VAPI_PUBLIC_KEY);
         vapiRef.current = vapi;
         vapi.on('call-start',   () => { if (!dead) setCallStatus('active'); });
-        vapi.on('call-end',     () => { if (!dead) { setCallStatus('idle'); setSubtitleText(''); setLastSpeaker(''); }});
+        vapi.on('call-end',     () => { 
+          if (!dead) { 
+            if (!lastErrorRef.current) {
+              setCallStatus('idle'); 
+              setSubtitleText(''); 
+              setLastSpeaker(''); 
+            }
+            setIsExpanded(false);
+          }
+        });
         vapi.on('speech-start', () => { if (!dead) setCallStatus('speaking'); });
         vapi.on('speech-end',   () => { if (!dead) setCallStatus('active'); });
         vapi.on('message', msg => {
@@ -62,8 +72,9 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
         vapi.on('error', e => {
           if (dead) return;
           console.error('[VA] error', e);
+          lastErrorRef.current = true;
           setCallStatus('error');
-          setTimeout(() => { if (!dead) setCallStatus('idle'); }, 3000);
+          setTimeout(() => { if (!dead) { setCallStatus('idle'); lastErrorRef.current = false; } }, 3000);
         });
       } catch (e) { if (!dead) setCallStatus('error'); }
     })();
@@ -77,7 +88,24 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
     setCallStatus('connecting');
 
     let slug = tenantSlug || '';
-    if (!slug) { try { slug = (await api.get('/vapi/config')).data.tenantSlug || ''; } catch (_) {} }
+    
+    if (!slug) {
+      try {
+        await setClerkTokenGetter(getToken);
+        const res = await api.get('/vapi/config');
+        slug = res.data?.tenantSlug || '';
+      } catch (e) {
+        console.error('[VA] Could not resolve tenantSlug:', e);
+      }
+    }
+
+    if (!slug) {
+      console.error('[VA] tenantSlug is empty — aborting call start');
+      setCallStatus('error');
+      setIsExpanded(false);
+      setTimeout(() => setCallStatus('idle'), 3000);
+      return;
+    }
 
     const systemPrompt = [
       'You are an AI voice assistant for a SaaS ticketing platform.',
@@ -118,6 +146,7 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
   };
 
   const handleBubbleClick = () => {
+    if (isBootstrapping && !tenantSlug) return;
     if (isExpanded) { stopCall(); return; }
     startCall();
   };
@@ -255,9 +284,10 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
             width:'72px',height:'72px',
             borderRadius:'50%',
             overflow:'hidden',
-            cursor:'pointer',
+            cursor: (isBootstrapping && !tenantSlug) ? 'wait' : 'pointer',
+            opacity: (isBootstrapping && !tenantSlug) ? 0.5 : 1,
             animation:'robotHover 3.5s ease-in-out infinite',
-            transition:'transform .2s ease',
+            transition:'transform .2s ease, opacity .2s ease',
           }}
           onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.12)';}}
           onMouseLeave={e=>{e.currentTarget.style.transform='';}}

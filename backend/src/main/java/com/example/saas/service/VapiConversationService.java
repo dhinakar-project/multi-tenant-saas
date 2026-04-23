@@ -52,7 +52,7 @@ public class VapiConversationService {
 
         try {
             // Step 3 — Gather ticket data (always needed)
-            List<Ticket> allTickets = safeGetTickets();
+            List<Ticket> allTickets = safeGetTicketsByTenant(tenant);
 
             // Step 4 — Try Gemini for a rich conversational response
             try {
@@ -215,11 +215,11 @@ public class VapiConversationService {
      * Safely fetches all tickets for the current tenant.
      * Returns an empty list on failure rather than throwing.
      */
-    private List<Ticket> safeGetTickets() {
+    private List<Ticket> safeGetTicketsByTenant(Tenant tenant) {
         try {
-            return ticketRepository.findAll();
+            return ticketRepository.findByTenantId(tenant.getId());
         } catch (Exception e) {
-            log.error("VapiConversationService.safeGetTickets failed: {}", e.getMessage());
+            log.error("VapiConversationService.safeGetTicketsByTenant failed: {}", e.getMessage());
             return java.util.Collections.emptyList();
         }
     }

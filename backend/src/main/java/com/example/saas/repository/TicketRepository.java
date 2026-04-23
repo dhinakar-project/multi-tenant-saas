@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -23,6 +24,8 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     Page<Ticket> findAllByPriority(String priority, Pageable pageable);
 
     Page<Ticket> findAllByAssigneeId(UUID assigneeId, Pageable pageable);
+
+    List<Ticket> findByTenantId(UUID tenantId);
 
     // AI Categorization — these bypass the Hibernate tenant filter since they update by ID only
     @Modifying

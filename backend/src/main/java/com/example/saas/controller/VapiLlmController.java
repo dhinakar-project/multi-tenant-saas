@@ -4,9 +4,14 @@ import com.example.saas.service.VapiConversationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import com.example.saas.model.User;
+import com.example.saas.model.Tenant;
+import com.example.saas.repository.TenantRepository;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +32,20 @@ public class VapiLlmController {
 
     private final VapiConversationService vapiConversationService;
     private final ObjectMapper objectMapper;
+    private final TenantRepository tenantRepository;
+
+    @GetMapping("/config")
+    public ResponseEntity<Map<String, String>> getVapiConfig(
+            @AuthenticationPrincipal User user) {
+        String slug = "";
+        if (user != null && user.getTenantId() != null) {
+            Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
+            if (tenant != null) {
+                slug = tenant.getSlug();
+            }
+        }
+        return ResponseEntity.ok(Map.of("tenantSlug", slug));
+    }
 
     @PostMapping(value = "/llm", consumes = "application/json")
     public ResponseEntity<StreamingResponseBody> handleLlmRequest(
@@ -42,10 +61,14 @@ public class VapiLlmController {
         for (Map<String, Object> m : rawMessages) {
             String role    = String.valueOf(m.getOrDefault("role", ""));
             String content = String.valueOf(m.getOrDefault("content", ""));
+            
             if (!VALID_ROLES.contains(role)) {
-                log.warn("VapiLlmController: dropping invalid role '{}'", role);
+                log.warn("VapiLlmController: skipping invalid role '{}' (content preview: {})", 
+                         role, content.length() > 50 ? content.substring(0, 50) : content);
                 continue;
             }
+            // Normalize empty content to prevent LLM errors
+            if (content.isBlank()) content = "(empty)";
             messages.add(Map.of("role", role, "content", content));
         }
 
@@ -107,7 +130,7 @@ public class VapiLlmController {
         };
 
         return ResponseEntity.ok()
-                .header("Content-Type", "text/event-stream;charset=UTF-8")
+                .contentType(MediaType.TEXT_EVENT_STREAM)
                 .header("Cache-Control", "no-cache, no-transform")
                 .header("X-Accel-Buffering", "no")
                 .header("Connection", "keep-alive")
