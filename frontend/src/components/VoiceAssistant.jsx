@@ -71,12 +71,18 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
         });
         vapi.on('error', e => {
           if (dead) return;
-          console.error('[VA] error', e);
+          console.error('[VA] ERROR EVENT RECEIVED:', e);
+          if (e.error) {
+              console.error('[VA] Error details:', JSON.stringify(e.error, null, 2));
+          }
           lastErrorRef.current = true;
           setCallStatus('error');
           setTimeout(() => { if (!dead) { setCallStatus('idle'); lastErrorRef.current = false; } }, 3000);
         });
-      } catch (e) { if (!dead) setCallStatus('error'); }
+      } catch (e) { 
+          console.error('[VA] Initialization catch block error:', e);
+          if (!dead) setCallStatus('error'); 
+      }
     })();
 
     return () => { dead = true; try { vapi?.stop(); } catch (_) {} };
@@ -116,19 +122,25 @@ export default function VoiceAssistant({ mode = 'dashboard', ticketId = '', tick
     ].join('\n');
 
     try {
-      await vapiRef.current.start({
+      const vapiPayload = {
         transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en-US' },
         model: {
           provider: 'custom-llm',
           url: `${VAPI_BACKEND_URL}/api/vapi/llm`,
-          model: 'gpt-4o-mini',
+          model: 'gemini-1.5-flash',
           messages: [{ role: 'system', content: systemPrompt }],
         },
-        voice: { provider: 'openai', voiceId: 'alloy' },
+        voice: { provider: '11labs', voiceId: 'bIHbv24MWmeRgasZH58o' },
         firstMessage: 'Hello! Ask me anything about your tickets.',
         silenceTimeoutSeconds: 30,
         maxDurationSeconds: 300,
-      });
+      };
+      
+      console.log('[VA] Starting Vapi with backend URL:', VAPI_BACKEND_URL);
+      console.log('[VA] Full payload:', JSON.stringify(vapiPayload, null, 2));
+
+      await vapiRef.current.start(vapiPayload);
+      console.log('[VA] start() call resolved successfully.');
     } catch (e) {
       console.error('[VA] start failed', e);
       setCallStatus('error');

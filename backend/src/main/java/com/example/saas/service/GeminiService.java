@@ -287,7 +287,7 @@ public class GeminiService {
                             .flatMap(body -> Mono.error(new RuntimeException("Gemini API error: " + body)))
                     )
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(Duration.ofSeconds(3))
                     .doOnError(e -> log.warn("Gemini WebClient call failed for model {}: {}", targetModel, e.getMessage()))
                     .onErrorReturn("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{}\"}]}}]}")
                     .block();

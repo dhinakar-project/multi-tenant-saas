@@ -88,7 +88,8 @@ public class VapiConversationService {
                 // If Gemini returned its own fallback error message, skip to rule-based
                 if (rawResponse != null
                         && !rawResponse.startsWith("I'm having trouble")
-                        && !rawResponse.isBlank()) {
+                        && !rawResponse.isBlank()
+                        && !rawResponse.equals("{}")) {
                     return cleanResponse(rawResponse);
                 }
 
@@ -115,7 +116,7 @@ public class VapiConversationService {
      * Answers common ticket questions directly from database data.
      * Returns a clean spoken sentence — no markdown.
      */
-    private String buildRuleBasedResponse(String userMessage, List<Ticket> tickets) {
+    public String buildRuleBasedResponse(String userMessage, List<Ticket> tickets) {
         String q = userMessage.toLowerCase();
 
         long total         = tickets.size();
@@ -187,6 +188,30 @@ public class VapiConversationService {
     // ─────────────────────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────
+
+    /**
+     * Fast fallback called by VapiLlmController when processMessage exceeds 4s.
+     * Resolves tenant and tickets synchronously (DB only, no Gemini) and returns
+     * a rule-based spoken response — always finishes in under 1 second.
+     */
+    public String buildFastFallback(String userMessage, List<Map<String, String>> messageHistory) {
+        String tenantSlug = extractTenantSlug(messageHistory);
+        if (tenantSlug == null || tenantSlug.isBlank()) {
+            return "I couldn't identify your organization. Please reconfigure the assistant.";
+        }
+        Optional<Tenant> tenantOpt = tenantRepository.findBySlug(tenantSlug);
+        if (tenantOpt.isEmpty()) {
+            return "I couldn't find your organization. Please contact support.";
+        }
+        Tenant tenant = tenantOpt.get();
+        TenantContext.setTenantId(tenant.getId());
+        try {
+            List<Ticket> tickets = safeGetTicketsByTenant(tenant);
+            return buildRuleBasedResponse(userMessage, tickets);
+        } finally {
+            TenantContext.clear();
+        }
+    }
 
     /**
      * Scans the system message for a "tenant:" prefix and extracts the slug.

@@ -16,6 +16,9 @@ import com.example.saas.repository.TenantRepository;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Custom LLM endpoint for Vapi (provider: "custom-llm").
@@ -47,7 +50,8 @@ public class VapiLlmController {
         return ResponseEntity.ok(Map.of("tenantSlug", slug));
     }
 
-    @PostMapping(value = "/llm", consumes = "application/json")
+    // Vapi automatically appends /chat/completions when using custom-llm provider
+    @PostMapping(value = {"/llm", "/llm/chat/completions"}, consumes = "application/json")
     public ResponseEntity<StreamingResponseBody> handleLlmRequest(
             @RequestBody Map<String, Object> body) {
 
@@ -83,10 +87,16 @@ public class VapiLlmController {
         }
         log.info("Vapi LLM: userMessage='{}' messages={}", userMessage, messages.size());
 
-        // ── 3. Build reply before streaming (keeps SSE fast) ─────────────
+        // ── 3. Build reply with hard 4-second cap to stay inside VAPI's LLM timeout budget ──
         String assistantReply;
+        final String finalUserMessage = userMessage;
         try {
-            assistantReply = vapiConversationService.processMessage(userMessage, messages);
+            assistantReply = CompletableFuture
+                    .supplyAsync(() -> vapiConversationService.processMessage(finalUserMessage, messages))
+                    .get(4, TimeUnit.SECONDS);
+        } catch (TimeoutException te) {
+            log.warn("VapiLlmController: processMessage timed out after 4s, using fast rule-based fallback");
+            assistantReply = vapiConversationService.buildFastFallback(finalUserMessage, messages);
         } catch (Exception e) {
             log.error("VapiLlmController: processMessage failed", e);
             assistantReply = "I'm having trouble right now. Please try again.";
@@ -108,20 +118,25 @@ public class VapiLlmController {
                 String id = "chatcmpl-" + UUID.randomUUID().toString().replace("-", "");
                 long ts = System.currentTimeMillis() / 1000L;
 
-                // Chunk 1 — content
+                // Chunk 1 — role only (OpenAI spec)
                 writer.print("data: {\"id\":\"" + id + "\",\"object\":\"chat.completion.chunk\","
                         + "\"created\":" + ts + ",\"model\":\"gpt-4o-mini\","
-                        + "\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\","
-                        + "\"content\":\"" + safe + "\"},\"finish_reason\":null}]}\n\n");
+                        + "\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n");
                 writer.flush();
 
-                // Chunk 2 — stop
+                // Chunk 2 — content
+                writer.print("data: {\"id\":\"" + id + "\",\"object\":\"chat.completion.chunk\","
+                        + "\"created\":" + ts + ",\"model\":\"gpt-4o-mini\","
+                        + "\"choices\":[{\"index\":0,\"delta\":{\"content\":\"" + safe + "\"},\"finish_reason\":null}]}\n\n");
+                writer.flush();
+
+                // Chunk 3 — stop
                 writer.print("data: {\"id\":\"" + id + "\",\"object\":\"chat.completion.chunk\","
                         + "\"created\":" + ts + ",\"model\":\"gpt-4o-mini\","
                         + "\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n");
                 writer.flush();
 
-                // Chunk 3 — done
+                // Chunk 4 — done
                 writer.print("data: [DONE]\n\n");
                 writer.flush();
             } catch (Exception e) {
