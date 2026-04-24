@@ -48,6 +48,7 @@ public class TenantFilter extends OncePerRequestFilter {
         if (path.startsWith("/actuator")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
+                || path.equals("/api/ping")
                 || path.startsWith("/error")) {
             return true;
         }
