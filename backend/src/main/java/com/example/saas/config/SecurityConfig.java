@@ -58,6 +58,7 @@ public class SecurityConfig {
                         // ✅ dev tools
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/health").permitAll()   // Public health probe
+                        .requestMatchers("/api/ping").permitAll()
                         .requestMatchers("/actuator/**").hasRole("TENANT_ADMIN") // Restrict sensitive actuator
                         .requestMatchers("/error").permitAll()
 
