@@ -254,9 +254,8 @@ public class GeminiService {
         }
 
         List<String> modelsToTry = List.of(
-            "gemini-2.0-flash-lite",
-            "gemini-2.0-flash",
-            "gemini-2.5-flash"
+            "gemini-2.5-flash",
+            "gemini-2.0-flash"
         );
         Exception lastException = null;
 
@@ -288,8 +287,6 @@ public class GeminiService {
                     )
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(3))
-                    .doOnError(e -> log.warn("Gemini WebClient call failed for model {}: {}", targetModel, e.getMessage()))
-                    .onErrorReturn("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{}\"}]}}]}")
                     .block();
 
                 if (sample != null && meterRegistry != null) {
